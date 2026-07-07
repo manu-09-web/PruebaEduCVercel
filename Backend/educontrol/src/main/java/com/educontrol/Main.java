@@ -6,13 +6,37 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 import com.educontrol.controllers.AlumnoController;
+import com.educontrol.controllers.UsuarioController;
+import com.educontrol.controllers.GrupoController;
+import com.educontrol.controllers.AsignarGrupoController;
+import com.educontrol.controllers.CampoFormativoController;
+import com.educontrol.controllers.ConfigTareaController;
+import com.educontrol.controllers.ConfigExamenController;
+import com.educontrol.controllers.ConfigParticipacionController;
+import com.educontrol.controllers.ConfigAsistenciaController;
+import com.educontrol.controllers.ConfigDisciplinaController;
+import com.educontrol.controllers.RegistroTareaController;
+import com.educontrol.controllers.RegistroAsistenciaController;
+import com.educontrol.controllers.RegistroParticipacionController;
+import com.educontrol.controllers.RegistroDisciplinaController;
+import com.educontrol.controllers.RegistroExamenController;
+import com.educontrol.controllers.DetalleExamenController;
+import com.educontrol.controllers.PeriodoController;
+import com.educontrol.controllers.PromedioController;
 
 public class Main {
 
+<<<<<<< HEAD
     // Datos de conexión a MySQL - AJUSTA ESTOS VALORES
     private static final String DB_URL = "jdbc:mysql://localhost:3306/educontroldb";
     private static final String DB_USER = "educontrol";
     private static final String DB_PASSWORD = "educontroldatabe10";
+=======
+    // Datos de conexión a MySQL
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/educontrol";
+    private static final String DB_USER = "EduControlUser";
+    private static final String DB_PASSWORD = "253EduControlMJC";
+>>>>>>> f969024d27c1f9c9da313bd312fa2389593bb8e8
 
     public static Connection conectar() throws SQLException {
         return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
@@ -26,6 +50,23 @@ public class Main {
             });
         });
         AlumnoController.registrarRutas(app);
+        UsuarioController.registrarRutas(app);
+        GrupoController.registrarRutas(app);
+        AsignarGrupoController.registrarRutas(app);
+        CampoFormativoController.registrarRutas(app);
+        ConfigTareaController.registrarRutas(app);
+        ConfigExamenController.registrarRutas(app);
+        ConfigParticipacionController.registrarRutas(app);
+        ConfigAsistenciaController.registrarRutas(app);
+        ConfigDisciplinaController.registrarRutas(app);
+        RegistroTareaController.registrarRutas(app);
+        RegistroAsistenciaController.registrarRutas(app);
+        RegistroParticipacionController.registrarRutas(app);
+        RegistroDisciplinaController.registrarRutas(app);
+        RegistroExamenController.registrarRutas(app);
+        DetalleExamenController.registrarRutas(app);
+        PeriodoController.registrarRutas(app);
+        PromedioController.registrarRutas(app);
 
         // Endpoint de prueba: verifica que la conexión a la BD funcione
         app.get("/", ctx -> ctx.result("EduControl backend corriendo... "));

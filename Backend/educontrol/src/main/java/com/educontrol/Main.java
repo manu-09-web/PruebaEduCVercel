@@ -23,13 +23,21 @@ import com.educontrol.controllers.RegistroExamenController;
 import com.educontrol.controllers.DetalleExamenController;
 import com.educontrol.controllers.PeriodoController;
 import com.educontrol.controllers.PromedioController;
+import com.educontrol.controllers.AlumnoGrupoController;
+import com.educontrol.controllers.LoginController;
 
 public class Main {
 
     // Datos de conexión a MySQL
+<<<<<<< HEAD
     private static final String DB_URL = "jdbc:mysql://localhost:3306/educontroldb";
     private static final String DB_USER = "educontrol";
     private static final String DB_PASSWORD = "educontroldatabe10";
+=======
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/educontrol";
+    private static final String DB_USER = "EduControlUser";
+    private static final String DB_PASSWORD = "253EduControlMJC";
+>>>>>>> 3ff8a68fc13554d9151c64e29c6a139662ec8bc3
 
     public static Connection conectar() throws SQLException {
         return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
@@ -41,7 +49,20 @@ public class Main {
             config.bundledPlugins.enableCors(cors -> {
                 cors.addRule(it -> it.anyHost()); // para que el frontend pueda pegarle sin problemas de CORS
             });
+        }).start(7000);
+
+        app.before(ctx -> {
+            String path = ctx.path();
+            if (path.equals("/login") || path.equals("/") || path.equals("/test-db")) {
+                return;
+            }
+
+            Integer idUsuario = ctx.sessionAttribute("idUsuario");
+            if (idUsuario == null) {
+                throw new io.javalin.http.UnauthorizedResponse("No autorizado. Debes iniciar sesion.");
+            }
         });
+
         AlumnoController.registrarRutas(app);
         UsuarioController.registrarRutas(app);
         GrupoController.registrarRutas(app);
@@ -60,6 +81,8 @@ public class Main {
         DetalleExamenController.registrarRutas(app);
         PeriodoController.registrarRutas(app);
         PromedioController.registrarRutas(app);
+        AlumnoGrupoController.registrarRutas(app);
+        LoginController.registrarRutas(app);
 
         // Endpoint de prueba: verifica que la conexión a la BD funcione
         app.get("/", ctx -> ctx.result("EduControl backend corriendo... "));
@@ -71,8 +94,6 @@ public class Main {
                 ctx.status(500).result("Error de conexión: " + e.getMessage());
             }
         });
-        app.start(7000);
-
         System.out.println("Servidor corriendo en http://localhost:7000");
     }
 }

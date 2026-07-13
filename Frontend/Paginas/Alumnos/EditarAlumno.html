@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduControl - Ver Información</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>EduControl - Editar Alumno</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../CSS/alumnos.css">
 </head>
 <body class="dashboard-body">
@@ -50,11 +48,21 @@
         <div class="header-main">
             <h2 class="titulo-perfil">Editar información del alumno</h2>
         </div>
-        
+
         <form id="form-editar" class="contenedor-informacion">
             <div>
-                <label>Nombre y apellidos:</label>
+                <label>Nombre(s):</label>
                 <input type="text" id="edit-nombre" class="campo-dato" required>
+            </div>
+
+            <div>
+                <label>Apellido Paterno:</label>
+                <input type="text" id="edit-apellido-paterno" class="campo-dato" required>
+            </div>
+
+            <div>
+                <label>Apellido Materno:</label>
+                <input type="text" id="edit-apellido-materno" class="campo-dato" required>
             </div>
 
             <div>
@@ -111,6 +119,7 @@
         <img src="../../Img/Logos/LogoUp.png" alt="Logo Universidad">
         <p>Ingeniería en Tecnologías de la Información e Innovación Digital<br>Universidad Politécnica de Chiapas</p>
     </footer>
-    <script src="../../JS/editarAlumno.js"></script>
+    <script src="../../JS/alumnos.js"></script>
+    <div id="toast-container"></div>
 </body>
 </html>

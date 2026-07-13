@@ -74,13 +74,30 @@ public class AlumnoDAO {
     }
 
     public void eliminar(int matricula) throws SQLException {
-        String sql = "DELETE FROM alumno WHERE Matricula = ?";
+        try (Connection conn = Main.conectar()) {
+            conn.setAutoCommit(false);
+            try {
+                // 1. Borra primero la relación con su grupo (tabla hija)
+                try (PreparedStatement stmt1 = conn.prepareStatement(
+                        "DELETE FROM alumno_grupo WHERE Matricula = ?")) {
+                    stmt1.setInt(1, matricula);
+                    stmt1.executeUpdate();
+                }
 
-        try (Connection conn = Main.conectar();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                // 2. Finalmente borra al alumno (tabla padre)
+                try (PreparedStatement stmt2 = conn.prepareStatement(
+                        "DELETE FROM alumno WHERE Matricula = ?")) {
+                    stmt2.setInt(1, matricula);
+                    stmt2.executeUpdate();
+                }
 
-            stmt.setInt(1, matricula);
-            stmt.executeUpdate();
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
         }
     }
 

@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../CSS/cuenta.css">
-    
+
 </head>
 <body class="dashboard-body">
 
@@ -33,16 +33,16 @@
             <a href="../Evaluacion/Evaluacion.html". class="item-menu">
                 <img src="../../Img/IconosDashboard/Evaluacion.svg" alt="Evaluación"> Evaluación
             </a>
-            <a href="#" class="item-menu">
+            <a href="../Registro/principal.html" class="item-menu">
                 <img src="../../Img/IconosDashboard/Registro.svg" alt="Registro"> Registro
             </a>
-            <a href="#" class="item-menu">
+            <a href="../Calificaciones/menucali.html" class="item-menu">
                 <img src="../../Img/IconosDashboard/Calificacion.svg" alt="Calificación"> Calificación
             </a>
-            <a href="#" class="item-menu">
+            <a href="../Grupos/listagrupos.html" class="item-menu">
                 <img src="../../Img/IconosDashboard/Gruposvg.svg" alt="Grupo"> Grupo
             </a>
-            <a href="#" class="item-menu">
+            <a href="../Reportes/menurepo.html" class="item-menu">
                 <img src="../../Img/IconosDashboard/Reportes.svg" alt="Reportes"> Reportes
             </a>
         </nav>
@@ -57,6 +57,10 @@
                         <img id="preview-foto" src="../../Img/avatar-default.png" alt="Avatar">
                     </div>
                     <p class="texto-foto">Foto de perfil <img src="../../Img/IconosCuenta/editarperfil.svg" class="editar-icono"></p>
+                </a>
+
+                <a href="#" class="link-cerrar-sesion" onclick="abrirModalCerrarSesion(); return false;">
+                    <img src="../../Img/IconosCuenta/cerrarsesion.svg" class="icono-cerrar-sesion"> Cerrar sesión
                 </a>
             </div>
 
@@ -125,6 +129,22 @@
                 </div>
             </div>
         </div>
+
+        <div id="modal-cerrar-sesion" class="modal-overlay">
+            <div class="contenedor-modal">
+                <h3 class="titulo-modal">¿Estás seguro que deseas cerrar sesión?</h3>
+
+                <div class="botones-modal">
+                    <button type="button" class="boton-cancelar" onclick="cerrarModalCerrarSesion()">
+                        Cancelar <img src="../../Img/IconosCuenta/cancelar.svg" alt="Cancelar">
+                    </button>
+                    <button type="button" class="boton-guardar" onclick="confirmarCerrarSesion()">
+                        Confirmar <img src="../../Img/IconosCuenta/guardar.svg" alt="Confirmar">
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </main>
     <footer class="dashboard-footer">
         <img src="../../Img/Logos/LogoUp.png" alt="Logo Universidad">

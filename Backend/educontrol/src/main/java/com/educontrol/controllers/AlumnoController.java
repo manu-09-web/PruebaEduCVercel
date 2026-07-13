@@ -7,13 +7,27 @@ import com.educontrol.modelos.AlumnoGrupo;
 import io.javalin.Javalin;
 
 import java.sql.SQLException;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class AlumnoController {
 
     private static final AlumnoDAO dao = new AlumnoDAO();
     private static final AlumnoGrupoDAO alumnoGrupoDAO = new AlumnoGrupoDAO();
+
+    // Combina los datos de Alumno + AlumnoGrupo en un solo objeto para el frontend
+    private static Map<String, Object> combinar(Alumno alumno, AlumnoGrupo ag) {
+        Map<String, Object> resultado = new LinkedHashMap<>();
+        resultado.put("matricula", alumno.getMatricula());
+        resultado.put("nombre", alumno.getNombre());
+        resultado.put("apellidoPaterno", alumno.getApellidoPaterno());
+        resultado.put("apellidoMaterno", alumno.getApellidoMaterno());
+        resultado.put("idGrupo", ag != null ? ag.getIdGrupo() : null);
+        resultado.put("numeroLista", ag != null ? ag.getNumeroLista() : null);
+        return resultado;
+    }
 
     public static void registrarRutas(Javalin app) {
 
@@ -22,21 +36,34 @@ public class AlumnoController {
                 Integer idGrupoDocente = SeguridadUtil.obtenerGrupoDelDocente(ctx);
 
                 if (idGrupoDocente == null) {
-                    ctx.json(dao.listarTodos());
+                    // Director: todos los alumnos, con su grupo real
+                    List<Alumno> todos = dao.listarTodos();
+                    List<Map<String, Object>> resultado = todos.stream()
+                        .map(a -> {
+                            try {
+                                AlumnoGrupo ag = alumnoGrupoDAO.obtenerPorMatricula(a.getMatricula());
+                                return combinar(a, ag);
+                            } catch (SQLException e) {
+                                return combinar(a, null);
+                            }
+                        })
+                        .collect(Collectors.toList());
+                    ctx.json(resultado);
                 } else {
+                    // Docente: solo su grupo
                     List<AlumnoGrupo> asignaciones = alumnoGrupoDAO.listarPorGrupo(idGrupoDocente);
-                    List<Alumno> alumnosFiltrados = asignaciones.stream()
+                    List<Map<String, Object>> resultado = asignaciones.stream()
                         .map(ag -> {
                             try {
-                                return dao.obtenerPorMatricula(ag.getMatricula());
+                                Alumno a = dao.obtenerPorMatricula(ag.getMatricula());
+                                return a != null ? combinar(a, ag) : null;
                             } catch (SQLException e) {
                                 return null;
                             }
                         })
-                        .filter(a -> a != null)
+                        .filter(m -> m != null)
                         .collect(Collectors.toList());
-
-                    ctx.json(alumnosFiltrados);
+                    ctx.json(resultado);
                 }
             } catch (SQLException e) {
                 ctx.status(500).result("Error: " + e.getMessage());
@@ -53,23 +80,57 @@ public class AlumnoController {
                 }
 
                 Alumno alumno = dao.obtenerPorMatricula(matricula);
-                if (alumno != null) {
-                    ctx.json(alumno);
-                } else {
+                if (alumno == null) {
                     ctx.status(404).result("Alumno no encontrado");
+                    return;
                 }
+
+                AlumnoGrupo ag = alumnoGrupoDAO.obtenerPorMatricula(matricula);
+                ctx.json(combinar(alumno, ag));
+
             } catch (SQLException e) {
                 ctx.status(500).result("Error: " + e.getMessage());
             }
         });
 
+        // Crear alumno Y asignarlo a un grupo en la misma operación
         app.post("/alumnos", ctx -> {
             try {
-                Alumno alumno = ctx.bodyAsClass(Alumno.class);
+                Map<String, Object> body = ctx.bodyAsClass(Map.class);
+
+                int matricula = ((Number) body.get("matricula")).intValue();
+                String nombre = (String) body.get("nombre");
+                String apellidoPaterno = (String) body.get("apellidoPaterno");
+                String apellidoMaterno = (String) body.get("apellidoMaterno");
+                int numeroLista = ((Number) body.get("numeroLista")).intValue();
+
+                // Si es Docente: SIEMPRE se usa su propio grupo (ignoramos lo que mande el front)
+                // Si es Director: se respeta el idGrupo que mande en el body
+                Integer idGrupoDocente = SeguridadUtil.obtenerGrupoDelDocente(ctx);
+                int idGrupoFinal;
+
+                if (idGrupoDocente != null) {
+                    idGrupoFinal = idGrupoDocente;
+                } else {
+                    if (body.get("idGrupo") == null) {
+                        ctx.status(400).result("Debes especificar el grupo (idGrupo)");
+                        return;
+                    }
+                    idGrupoFinal = ((Number) body.get("idGrupo")).intValue();
+                }
+
+                Alumno alumno = new Alumno(matricula, nombre, apellidoPaterno, apellidoMaterno);
                 dao.crear(alumno);
-                ctx.status(201).result("Alumno creado correctamente");
+
+                AlumnoGrupo ag = new AlumnoGrupo(0, matricula, numeroLista, idGrupoFinal);
+                alumnoGrupoDAO.crear(ag);
+
+                ctx.status(201).result("Alumno creado y asignado correctamente");
+
             } catch (SQLException e) {
                 ctx.status(500).result("Error: " + e.getMessage());
+            } catch (Exception e) {
+                ctx.status(400).result("Datos inválidos: " + e.getMessage());
             }
         });
 
@@ -82,12 +143,41 @@ public class AlumnoController {
                     return;
                 }
 
-                Alumno alumno = ctx.bodyAsClass(Alumno.class);
-                alumno.setMatricula(matricula);
+                Map<String, Object> body = ctx.bodyAsClass(Map.class);
+
+                String nombre = (String) body.get("nombre");
+                String apellidoPaterno = (String) body.get("apellidoPaterno");
+                String apellidoMaterno = (String) body.get("apellidoMaterno");
+
+                Alumno alumno = new Alumno(matricula, nombre, apellidoPaterno, apellidoMaterno);
                 dao.actualizar(alumno);
+
+                // Manejo del grupo/numeroLista (si vienen en el body)
+                if (body.get("numeroLista") != null) {
+                    int numeroLista = ((Number) body.get("numeroLista")).intValue();
+
+                    Integer idGrupoDocente = SeguridadUtil.obtenerGrupoDelDocente(ctx);
+                    int idGrupoFinal;
+
+                    if (idGrupoDocente != null) {
+                        // Docente: NUNCA puede cambiar el grupo de un alumno, se fuerza el suyo
+                        idGrupoFinal = idGrupoDocente;
+                    } else {
+                        // Director: puede mover al alumno de grupo libremente
+                        idGrupoFinal = body.get("idGrupo") != null
+                            ? ((Number) body.get("idGrupo")).intValue()
+                            : alumnoGrupoDAO.obtenerPorMatricula(matricula).getIdGrupo();
+                    }
+
+                    alumnoGrupoDAO.cambiarGrupo(matricula, idGrupoFinal, numeroLista);
+                }
+
                 ctx.result("Alumno actualizado correctamente");
+
             } catch (SQLException e) {
                 ctx.status(500).result("Error: " + e.getMessage());
+            } catch (Exception e) {
+                ctx.status(400).result("Datos inválidos: " + e.getMessage());
             }
         });
 

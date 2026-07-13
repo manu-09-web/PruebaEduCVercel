@@ -9,7 +9,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import org.mindrot.jbcrypt.BCrypt;
 
 public class UsuarioDAO {
 
@@ -44,26 +43,23 @@ public class UsuarioDAO {
         return null;
     }
 
-
     public void crear(Usuario usuario) throws SQLException {
         String sql = "INSERT INTO usuario (NombreUsuario, Nombre, ApellidoPaterno, ApellidoMaterno, Contrasena, Rol) " +
             "VALUES (?, ?, ?, ?, ?, ?)";
-
-        String contrasenaHasheada = BCrypt.hashpw(usuario.getContrasena(), BCrypt.gensalt());
 
         try (Connection conn = Main.conectar();
             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, usuario.getNombreUsuario());
-            stmt.setString(2, usuario.getNombre());   
+            stmt.setString(2, usuario.getNombre());
             stmt.setString(3, usuario.getApellidoPaterno());
             stmt.setString(4, usuario.getApellidoMaterno());
-            stmt.setString(5, contrasenaHasheada);
+            stmt.setString(5, usuario.getContrasena());
             stmt.setString(6, usuario.getRol());
 
             stmt.executeUpdate();
-        }      
-}
+        }
+    }
 
     public void actualizar(Usuario usuario) throws SQLException {
         String sql = "UPDATE usuario SET NombreUsuario = ?, Nombre = ?, ApellidoPaterno = ?, " +
@@ -95,6 +91,48 @@ public class UsuarioDAO {
         }
     }
 
+    public Usuario buscarPorNombreUsuario(String nombreUsuario) throws SQLException {
+        String sql = "SELECT * FROM usuario WHERE NombreUsuario = ?";
+
+        try (Connection conn = Main.conectar();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, nombreUsuario);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return mapearUsuario(rs);
+            }
+        }
+        return null;
+    }
+
+    // --- NUEVOS MÉTODOS PARA EL MÓDULO CUENTA ---
+
+    public void actualizarNombreUsuario(int idUsuario, String nuevoNombreUsuario) throws SQLException {
+        String sql = "UPDATE usuario SET NombreUsuario = ? WHERE idUsuario = ?";
+
+        try (Connection conn = Main.conectar();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, nuevoNombreUsuario);
+            stmt.setInt(2, idUsuario);
+            stmt.executeUpdate();
+        }
+    }
+
+    public void actualizarContrasena(int idUsuario, String nuevaContrasenaHasheada) throws SQLException {
+        String sql = "UPDATE usuario SET Contrasena = ? WHERE idUsuario = ?";
+
+        try (Connection conn = Main.conectar();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, nuevaContrasenaHasheada);
+            stmt.setInt(2, idUsuario);
+            stmt.executeUpdate();
+        }
+    }
+
     private Usuario mapearUsuario(ResultSet rs) throws SQLException {
         return new Usuario(
             rs.getInt("idUsuario"),
@@ -106,20 +144,4 @@ public class UsuarioDAO {
             rs.getString("Rol")
         );
     }
-
-    public Usuario buscarPorNombreUsuario(String nombreUsuario) throws SQLException {
-    String sql = "SELECT * FROM usuario WHERE NombreUsuario = ?";
-
-    try (Connection conn = Main.conectar();
-        PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-        stmt.setString(1, nombreUsuario);
-        ResultSet rs = stmt.executeQuery();
-
-        if (rs.next()) {
-            return mapearUsuario(rs);
-        }
-    }
-    return null;
-}
 }

@@ -4,7 +4,6 @@ import com.educontrol.dao.UsuarioDAO;
 import com.educontrol.modelos.LoginRequest;
 import com.educontrol.modelos.Usuario;
 import io.javalin.Javalin;
-import org.mindrot.jbcrypt.BCrypt;
 
 import java.sql.SQLException;
 
@@ -24,7 +23,14 @@ public class LoginController {
                     return;
                 }
 
+                /*
                 boolean passwordValido = BCrypt.checkpw(login.getContrasena(), usuario.getContrasena());
+
+                if (!passwordValido) {
+                    ctx.status(401).result("Usuario o contraseña incorrectos");
+                    return;
+                }*/
+                boolean passwordValido = login.getContrasena().equals(usuario.getContrasena());
 
                 if (!passwordValido) {
                     ctx.status(401).result("Usuario o contraseña incorrectos");

@@ -26,18 +26,15 @@ import com.educontrol.controllers.PromedioController;
 import com.educontrol.controllers.AlumnoGrupoController;
 import com.educontrol.controllers.LoginController;
 
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.server.session.SessionHandler;
+
 public class Main {
 
     // Datos de conexión a MySQL
-<<<<<<< HEAD
     private static final String DB_URL = "jdbc:mysql://localhost:3306/educontroldb";
     private static final String DB_USER = "educontrol";
     private static final String DB_PASSWORD = "educontroldatabe10";
-=======
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/educontrol";
-    private static final String DB_USER = "EduControlUser";
-    private static final String DB_PASSWORD = "253EduControlMJC";
->>>>>>> 3ff8a68fc13554d9151c64e29c6a139662ec8bc3
 
     public static Connection conectar() throws SQLException {
         return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
@@ -47,11 +44,27 @@ public class Main {
 
         Javalin app = Javalin.create(config -> {
             config.bundledPlugins.enableCors(cors -> {
-                cors.addRule(it -> it.anyHost()); // para que el frontend pueda pegarle sin problemas de CORS
+                cors.addRule(it -> {
+                    it.allowHost("http://127.0.0.1:5500", "http://localhost:5500");
+                    it.allowCredentials = true;
+                });
             });
+
+            config.jetty.modifyServletContextHandler(handler -> {
+                SessionHandler sessionHandler = new SessionHandler();
+                sessionHandler.setHttpOnly(true);
+                sessionHandler.setSameSite(HttpCookie.SameSite.NONE);
+                sessionHandler.getSessionCookieConfig().setSecure(true);
+                handler.setSessionHandler(sessionHandler);
+            });
+
         }).start(7000);
 
         app.before(ctx -> {
+            if (ctx.method().toString().equals("OPTIONS")) {
+                return;
+            }
+
             String path = ctx.path();
             if (path.equals("/login") || path.equals("/") || path.equals("/test-db")) {
                 return;

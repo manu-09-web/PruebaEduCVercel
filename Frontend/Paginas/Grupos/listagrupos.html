@@ -77,34 +77,31 @@
                                 <th>Grado</th>
                                 <th>Grupo</th>
                                 <th>Docente</th>
-                                <th>Alumnos</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr data-ciclo="2025 - 2026">
-                                <td class="celda-centro celda-grado">1</td>
-                                <td class="celda-centro celda-grupo">A</td>
-                                <td class="celda-docente">Docente 1</td>
-                                <td>Alumnos 1</td>
-                                <td class="celda-centro">
-                                    <button class="btn-accion-icono btn-ver-grupo" title="Ver resumen"><img src="../../Img/IconosAlumnos/ver.svg" alt="Ver"></button>
-                                    <button class="btn-accion-icono btn-editar-grupo" title="Editar"><img src="../../Img/IconosAlumnos/editar.svg" alt="Editar"></button>
-                                    <button class="btn-accion-icono btn-eliminar-grupo" title="Eliminar"><img src="../../Img/IconosAlumnos/eliminar.svg" alt="Eliminar"></button>
-                                </td>
-                            </tr>
-                            <tr data-ciclo="2025 - 2026">
-                                <td class="celda-centro celda-grado">1</td>
-                                <td class="celda-centro celda-grupo">B</td>
-                                <td class="celda-docente">Docente 2</td>
-                                <td>Alumnos 2</td>
-                                <td class="celda-centro">
-                                    <button class="btn-accion-icono btn-ver-grupo" title="Ver resumen"><img src="../../Img/IconosAlumnos/ver.svg" alt="Ver"></button>
-                                    <button class="btn-accion-icono btn-editar-grupo" title="Editar"><img src="../../Img/IconosAlumnos/editar.svg" alt="Editar"></button>
-                                    <button class="btn-accion-icono btn-eliminar-grupo" title="Eliminar"><img src="../../Img/IconosAlumnos/eliminar.svg" alt="Eliminar"></button>
-                                </td>
-                            </tr>
-                        </tbody>
+                        <tbody id="cuerpo-grupos">
+                        <tr data-ciclo="2025 - 2026">
+                            <td class="celda-centro celda-grado">1</td>
+                            <td class="celda-centro celda-grupo">A</td>
+                            <td class="celda-docente">Docente 1</td>
+                            <td class="celda-centro">
+                                <button class="btn-accion-icono btn-ver-grupo" title="Ver resumen"><img src="../../Img/IconosAlumnos/ver.svg" alt="Ver"></button>
+                                <button class="btn-accion-icono btn-editar-grupo" title="Editar"><img src="../../Img/IconosAlumnos/editar.svg" alt="Editar"></button>
+                                <button class="btn-accion-icono btn-eliminar-grupo" title="Eliminar"><img src="../../Img/IconosAlumnos/eliminar.svg" alt="Eliminar"></button>
+                            </td>
+                        </tr>
+                        <tr data-ciclo="2025 - 2026">
+                            <td class="celda-centro celda-grado">1</td>
+                            <td class="celda-centro celda-grupo">B</td>
+                            <td class="celda-docente">Docente 2</td>
+                            <td class="celda-centro">
+                                <button class="btn-accion-icono btn-ver-grupo" title="Ver resumen"><img src="../../Img/IconosAlumnos/ver.svg" alt="Ver"></button>
+                                <button class="btn-accion-icono btn-editar-grupo" title="Editar"><img src="../../Img/IconosAlumnos/editar.svg" alt="Editar"></button>
+                                <button class="btn-accion-icono btn-eliminar-grupo" title="Eliminar"><img src="../../Img/IconosAlumnos/eliminar.svg" alt="Eliminar"></button>
+                            </td>
+                        </tr>
+                    </tbody>
                     </table>
                 </div>
 
@@ -124,6 +121,9 @@
                             <option value="1">1° Grado</option>
                             <option value="2">2° Grado</option>
                             <option value="3">3° Grado</option>
+                            <option value="4">4° Grado</option>
+                            <option value="5">5° Grado</option>
+                            <option value="6">6° Grado</option>
                         </select>
                     </div>
                     <div class="modal-grupo-input">
@@ -167,6 +167,9 @@
                             <option value="1">1° Grado</option>
                             <option value="2">2° Grado</option>
                             <option value="3">3° Grado</option>
+                            <option value="4">4° Grado</option>
+                            <option value="5">5° Grado</option>
+                            <option value="6">6° Grado</option>
                         </select>
                     </div>
                     <div class="modal-grupo-input">
@@ -280,6 +283,6 @@
         <p>Ingeniería en Tecnologías de la Información e Innovación Digital<br>Universidad Politécnica de Chiapas</p>
     </footer>
 
-    <script src="../../JS/preuba.js"></script>
+    <script src="../../JS/grupos.js"></script>
 </body>
 </html>

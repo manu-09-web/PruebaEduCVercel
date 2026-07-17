@@ -43,17 +43,22 @@ public class GrupoDAO {
         return null;
     }
 
-    public void crear(Grupo grupo) throws SQLException {
+    public int crear(Grupo grupo) throws SQLException {
         String sql = "INSERT INTO grupo (Grado, Grupo) VALUES (?, ?)";
 
         try (Connection conn = Main.conectar();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
+            PreparedStatement stmt = conn.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
 
             stmt.setInt(1, grupo.getGrado());
             stmt.setString(2, grupo.getGrupo());
-
             stmt.executeUpdate();
+
+            ResultSet rs = stmt.getGeneratedKeys();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
         }
+        return -1;
     }
 
     public void actualizar(Grupo grupo) throws SQLException {

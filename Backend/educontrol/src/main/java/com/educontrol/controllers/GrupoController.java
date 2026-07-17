@@ -38,8 +38,9 @@ public class GrupoController {
         app.post("/grupos", ctx -> {
             try {
                 Grupo grupo = ctx.bodyAsClass(Grupo.class);
-                dao.crear(grupo);
-                ctx.status(201).result("Grupo creado correctamente");
+                int idGenerado = dao.crear(grupo);
+                grupo.setIdGrupo(idGenerado);
+                ctx.status(201).json(grupo);
             } catch (SQLException e) {
                 ctx.status(500).result("Error: " + e.getMessage());
             }

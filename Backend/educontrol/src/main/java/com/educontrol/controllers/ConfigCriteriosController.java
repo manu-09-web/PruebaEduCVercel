@@ -14,6 +14,8 @@ import com.educontrol.modelos.ConfigTarea;
 import io.javalin.Javalin;
 
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ConfigCriteriosController {
 
@@ -23,8 +25,26 @@ public class ConfigCriteriosController {
     private static final ConfigAsistenciaDAO asistenciaDAO = new ConfigAsistenciaDAO();
     private static final ConfigDisciplinaDAO disciplinaDAO = new ConfigDisciplinaDAO();
 
+    // Arma el mapa de resultado a partir de un idUsuario dado (reutilizado por ambos endpoints GET)
+    private static Map<String, Object> obtenerCriteriosDeUsuario(int idUsuario) throws SQLException {
+        ConfigTarea tarea = tareaDAO.obtenerPorUsuario(idUsuario);
+        ConfigExamen examen = examenDAO.obtenerPorUsuario(idUsuario);
+        ConfigParticipacion participacion = participacionDAO.obtenerPorUsuario(idUsuario);
+        ConfigAsistencia asistencia = asistenciaDAO.obtenerPorUsuario(idUsuario);
+        ConfigDisciplina disciplina = disciplinaDAO.obtenerPorUsuario(idUsuario);
+
+        Map<String, Object> resultado = new HashMap<>();
+        resultado.put("porcentajeTarea", tarea != null ? tarea.getPorcentaje() : null);
+        resultado.put("porcentajeExamen", examen != null ? examen.getPorcentaje() : null);
+        resultado.put("porcentajeParticipacion", participacion != null ? participacion.getPorcentaje() : null);
+        resultado.put("porcentajeAsistencia", asistencia != null ? asistencia.getPorcentaje() : null);
+        resultado.put("porcentajeDisciplina", disciplina != null ? disciplina.getPorcentaje() : null);
+        return resultado;
+    }
+
     public static void registrarRutas(Javalin app) {
 
+        // Guardar/actualizar MIS PROPIOS criterios (solo el docente/director logueado, sobre sí mismo)
         app.post("/config-criterios", ctx -> {
             try {
                 Integer idUsuario = ctx.sessionAttribute("idUsuario");
@@ -98,6 +118,7 @@ public class ConfigCriteriosController {
             }
         });
 
+        // Consultar MIS PROPIOS criterios (docente o director, sobre sí mismo)
         app.get("/config-criterios", ctx -> {
             try {
                 Integer idUsuario = ctx.sessionAttribute("idUsuario");
@@ -106,21 +127,32 @@ public class ConfigCriteriosController {
                     return;
                 }
 
-                ConfigTarea tarea = tareaDAO.obtenerPorUsuario(idUsuario);
-                ConfigExamen examen = examenDAO.obtenerPorUsuario(idUsuario);
-                ConfigParticipacion participacion = participacionDAO.obtenerPorUsuario(idUsuario);
-                ConfigAsistencia asistencia = asistenciaDAO.obtenerPorUsuario(idUsuario);
-                ConfigDisciplina disciplina = disciplinaDAO.obtenerPorUsuario(idUsuario);
+                ctx.json(obtenerCriteriosDeUsuario(idUsuario));
 
-                java.util.Map<String, Object> resultado = new java.util.HashMap<>();
-                resultado.put("porcentajeTarea", tarea != null ? tarea.getPorcentaje() : null);
-                resultado.put("porcentajeExamen", examen != null ? examen.getPorcentaje() : null);
-                resultado.put("porcentajeParticipacion", participacion != null ? participacion.getPorcentaje() : null);
-                resultado.put("porcentajeAsistencia", asistencia != null ? asistencia.getPorcentaje() : null);
-                resultado.put("porcentajeDisciplina", disciplina != null ? disciplina.getPorcentaje() : null);
+            } catch (SQLException e) {
+                ctx.status(500).result("Error: " + e.getMessage());
+            }
+        });
 
-                ctx.json(resultado);
+        // Consultar los criterios de UN DOCENTE ESPECÍFICO (solo el Director puede usar esto, solo lectura)
+        app.get("/config-criterios/{idUsuario}", ctx -> {
+            String rolSesion = ctx.sessionAttribute("rol");
+            if (!"Director".equals(rolSesion)) {
+                ctx.status(403).result("Solo el Director puede consultar los criterios de otro usuario");
+                return;
+            }
 
+            int idUsuarioConsultado;
+            try {
+                idUsuarioConsultado = Integer.parseInt(ctx.pathParam("idUsuario"));
+            } catch (NumberFormatException e) {
+                ctx.status(400).result("idUsuario inválido: " + ctx.pathParam("idUsuario"));
+                return;
+            }
+
+            try {
+                Map<String, Object> criterios = obtenerCriteriosDeUsuario(idUsuarioConsultado);
+                ctx.json(criterios);
             } catch (SQLException e) {
                 ctx.status(500).result("Error: " + e.getMessage());
             }

@@ -4,6 +4,8 @@ import com.educontrol.modelos.ConfigCriteriosRequest;
 
 public class ValidacionPorcentajesUtil {
 
+    private static final int MINIMO_POR_CRITERIO = 5;
+
     public static String validar(ConfigCriteriosRequest request) {
         int tarea = request.getPorcentajeTarea();
         int examen = request.getPorcentajeExamen();
@@ -11,8 +13,9 @@ public class ValidacionPorcentajesUtil {
         int asistencia = request.getPorcentajeAsistencia();
         int disciplina = request.getPorcentajeDisciplina();
 
-        if (tarea <= 0 || examen <= 0 || participacion <= 0 || asistencia <= 0 || disciplina <= 0) {
-            return "Ningún porcentaje puede ser 0 o negativo.";
+        if (tarea < MINIMO_POR_CRITERIO || examen < MINIMO_POR_CRITERIO || participacion < MINIMO_POR_CRITERIO
+                || asistencia < MINIMO_POR_CRITERIO || disciplina < MINIMO_POR_CRITERIO) {
+            return "Cada criterio debe tener un valor mínimo de " + MINIMO_POR_CRITERIO + "%.";
         }
 
         int suma = tarea + examen + participacion + asistencia + disciplina;

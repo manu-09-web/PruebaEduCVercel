@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../CSS/Evaluacion.css">
-    
+
 </head>
 <body class="dashboard-body">
 
@@ -53,6 +53,18 @@
             <h2 class="titulo-perfil">Criterios de Evaluación</h2>
         </div>
 
+        <!-- Solo visible para el Director: elegir qué docente consultar -->
+        <div id="selector-docente-contenedor" style="display:none; margin-bottom: 16px;">
+            <label for="selector-docente"><strong>Consultar docente:</strong></label>
+            <select id="selector-docente">
+                <option value="">Selecciona un docente...</option>
+            </select>
+        </div>
+
+        <div id="aviso-solo-lectura" style="display:none; margin-bottom: 12px; color:#7a5b00;">
+            Estás viendo los criterios de otro docente en modo solo lectura.
+        </div>
+
         <div class="tabla-contenedor-full">
             <table class="tabla-evaluacion">
                 <thead>
@@ -62,19 +74,19 @@
                     </tr>
                 </thead>
                 <tbody id="evaluacion-cuerpo">
-                    <tr><td>Tareas</td><td><input type="number" value="20"> %</td></tr>
-                    <tr><td>Asistencia</td><td><input type="number" value="20"> %</td></tr>
-                    <tr><td>Participación</td><td><input type="number" value="10"> %</td></tr>
-                    <tr><td>Disciplina</td><td><input type="number" value="20"> %</td></tr>
-                    <tr><td>Examen</td><td><input type="number" value="30"> %</td></tr>
-                    <tr class="fila-total"><td>Total</td><td>100%</td></tr>
+                    <tr><td>Tareas</td><td><input type="number" id="input-tarea" min="5" max="100" value="20"> %</td></tr>
+                    <tr><td>Asistencia</td><td><input type="number" id="input-asistencia" min="5" max="100" value="20"> %</td></tr>
+                    <tr><td>Participación</td><td><input type="number" id="input-participacion" min="5" max="100" value="10"> %</td></tr>
+                    <tr><td>Disciplina</td><td><input type="number" id="input-disciplina" min="5" max="100" value="20"> %</td></tr>
+                    <tr><td>Examen</td><td><input type="number" id="input-examen" min="5" max="100" value="30"> %</td></tr>
+                    <tr class="fila-total"><td>Total</td><td id="total-porcentaje">100%</td></tr>
                 </tbody>
             </table>
         </div>
 
-        <div class="acciones-evaluacion">
-            <button class="btn-limpiar">Limpiar <img src="../../Img/IconosEvaluacion/limpiar.svg" alt="limpiar"></button>
-            <button class="btn-guardar">Guardar<img src="../../Img/IconosEvaluacion/guardar.svg" alt="guardar"></button>
+        <div class="acciones-evaluacion" id="acciones-evaluacion">
+            <button class="btn-limpiar" id="btn-limpiar">Limpiar <img src="../../Img/IconosEvaluacion/limpiar.svg" alt="limpiar"></button>
+            <button class="btn-guardar" id="btn-guardar">Guardar<img src="../../Img/IconosEvaluacion/guardar.svg" alt="guardar"></button>
         </div>
     </main>
     <footer class="dashboard-footer">

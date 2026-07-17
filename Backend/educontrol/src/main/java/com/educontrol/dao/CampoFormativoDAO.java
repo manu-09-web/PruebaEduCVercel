@@ -91,4 +91,21 @@ public class CampoFormativoDAO {
             rs.getString("CicloEscolar")
         );
     }
+
+    public List<CampoFormativo> listarPorGrado(int grado) throws SQLException {
+        List<CampoFormativo> lista = new ArrayList<>();
+        String sql = "SELECT * FROM campo_formativo WHERE Grado = ?";
+
+        try (Connection conn = Main.conectar();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, grado);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                lista.add(mapear(rs));
+            }
+        }
+        return lista;
+    }
 }

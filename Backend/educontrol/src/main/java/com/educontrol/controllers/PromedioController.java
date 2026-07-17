@@ -6,6 +6,7 @@ import com.educontrol.dao.ConfigExamenDAO;
 import com.educontrol.dao.ConfigParticipacionDAO;
 import com.educontrol.dao.ConfigTareaDAO;
 import com.educontrol.dao.DetalleExamenDAO;
+import com.educontrol.dao.PeriodoDAO;
 import com.educontrol.dao.PromedioDAO;
 import com.educontrol.dao.RegistroAsistenciaDAO;
 import com.educontrol.dao.RegistroDisciplinaDAO;
@@ -18,6 +19,7 @@ import com.educontrol.modelos.ConfigExamen;
 import com.educontrol.modelos.ConfigParticipacion;
 import com.educontrol.modelos.ConfigTarea;
 import com.educontrol.modelos.DetalleExamen;
+import com.educontrol.modelos.Periodo;
 import com.educontrol.modelos.Promedio;
 import com.educontrol.modelos.RegistroAsistencia;
 import com.educontrol.modelos.RegistroExamen;
@@ -47,6 +49,7 @@ public class PromedioController {
     private static final RegistroAsistenciaDAO registroAsistenciaDAO = new RegistroAsistenciaDAO();
     private static final RegistroDisciplinaDAO registroDisciplinaDAO = new RegistroDisciplinaDAO();
 
+    private static final PeriodoDAO periodoDAO = new PeriodoDAO();
     private static final PromedioDAO promedioDAO = new PromedioDAO();
 
     public static void registrarRutas(Javalin app) {
@@ -89,18 +92,12 @@ public class PromedioController {
                 int idPeriodo = Integer.parseInt(ctx.queryParam("idPeriodo"));
                 int grado = Integer.parseInt(ctx.queryParam("grado"));
 
-                Map<String, Object> resultado = calcularPromedio(idUsuario, matricula, idCampoFormativo, idPeriodo, grado);
-                BigDecimal promedioFinal = (BigDecimal) resultado.get("promedioFinal");
-
-                Promedio existente = promedioDAO.obtenerPorMatriculaCampoPeriodo(matricula, idCampoFormativo, idPeriodo);
-                if (existente == null) {
-                    Promedio nuevo = new Promedio(0, matricula, idCampoFormativo, promedioFinal, grado, idPeriodo);
-                    promedioDAO.crear(nuevo);
-                } else {
-                    existente.setPromedioFinal(promedioFinal);
-                    promedioDAO.actualizar(existente);
-                }
-
+                BigDecimal promedioFinal = calcularYGuardarPromedio(idUsuario, matricula, idCampoFormativo, idPeriodo, grado);
+                Map<String, Object> resultado = new HashMap<>();
+                resultado.put("matricula", matricula);
+                resultado.put("idCampoFormativo", idCampoFormativo);
+                resultado.put("idPeriodo", idPeriodo);
+                resultado.put("promedioFinal", promedioFinal);
                 ctx.json(resultado);
 
             } catch (NumberFormatException e) {
@@ -111,7 +108,36 @@ public class PromedioController {
         });
     }
 
-    private static Map<String, Object> calcularPromedio(int idUsuario, int matricula, int idCampoFormativo, int idPeriodo, int grado) throws SQLException {
+    // Calcula el promedio Y lo guarda (upsert). Publico y estatico para que CierrePeriodoController lo reutilice.
+    public static BigDecimal calcularYGuardarPromedio(int idUsuario, int matricula, int idCampoFormativo, int idPeriodo, int grado) throws SQLException {
+        Map<String, Object> resultado = calcularPromedio(idUsuario, matricula, idCampoFormativo, idPeriodo, grado);
+        BigDecimal promedioFinal = (BigDecimal) resultado.get("promedioFinal");
+
+        Promedio existente = promedioDAO.obtenerPorMatriculaCampoPeriodo(matricula, idCampoFormativo, idPeriodo);
+        if (existente == null) {
+            Promedio nuevo = new Promedio(0, matricula, idCampoFormativo, promedioFinal, grado, idPeriodo);
+            promedioDAO.crear(nuevo);
+        } else {
+            existente.setPromedioFinal(promedioFinal);
+            promedioDAO.actualizar(existente);
+        }
+
+        return promedioFinal;
+    }
+
+    public static Map<String, Object> calcularPromedio(int idUsuario, int matricula, int idCampoFormativo, int idPeriodo, int grado) throws SQLException {
+
+        // --- Resolver el periodo ANCLA (para Asistencia/Disciplina) ---
+        // idPeriodo llega como el especifico de ESTA materia; necesitamos el idGrupo y el texto
+        // de periodo para encontrar el ancla real (menor idCampoFormativo) del grupo+periodo.
+        Periodo periodoMateria = periodoDAO.obtenerPorId(idPeriodo);
+        if (periodoMateria == null) {
+            throw new SQLException("El periodo especificado (" + idPeriodo + ") no existe.");
+        }
+        Integer idPeriodoAncla = periodoDAO.obtenerIdPeriodoAncla(periodoMateria.getIdGrupo(), periodoMateria.getPeriodo());
+        if (idPeriodoAncla == null) {
+            throw new SQLException("No se encontro el periodo ancla para el grupo " + periodoMateria.getIdGrupo() + " y periodo " + periodoMateria.getPeriodo());
+        }
 
         // --- Obtener los 5 porcentajes configurados por el docente ---
         ConfigTarea configTarea = configTareaDAO.obtenerPorUsuario(idUsuario);
@@ -126,7 +152,7 @@ public class PromedioController {
         int pctAsistencia = configAsistencia != null ? configAsistencia.getPorcentaje() : 0;
         int pctDisciplina = configDisciplina != null ? configDisciplina.getPorcentaje() : 0;
 
-        // --- 1. TAREA: (entregadas / total) x 10 x (%tarea/100) ---
+        // --- 1. TAREA (usa idPeriodo especifico de la materia) ---
         List<RegistroTarea> tareas = registroTareaDAO.listarPorAlumnoCampoPeriodo(matricula, idCampoFormativo, idPeriodo);
         double resultadoTarea = 0;
         if (!tareas.isEmpty()) {
@@ -135,7 +161,7 @@ public class PromedioController {
             resultadoTarea = proporcion * 10 * (pctTarea / 100.0);
         }
 
-        // --- 2. EXAMEN: promedio de (aciertos/totalPreguntas) x 10 x (%examen/100) ---
+        // --- 2. EXAMEN (usa idPeriodo especifico de la materia) ---
         List<RegistroExamen> examenes = registroExamenDAO.listarPorAlumnoCampoPeriodo(matricula, idCampoFormativo, idPeriodo);
         double resultadoExamen = 0;
         if (!examenes.isEmpty()) {
@@ -154,7 +180,7 @@ public class PromedioController {
             }
         }
 
-        // --- 3. PARTICIPACION: promedio de Puntuacion x (%participacion/100) ---
+        // --- 3. PARTICIPACION (usa idPeriodo especifico de la materia) ---
         List<RegistroParticipacion> participaciones = registroParticipacionDAO.listarPorAlumnoCampoPeriodo(matricula, idCampoFormativo, idPeriodo);
         double resultadoParticipacion = 0;
         if (!participaciones.isEmpty()) {
@@ -163,8 +189,8 @@ public class PromedioController {
             resultadoParticipacion = promedioPuntuacion * (pctParticipacion / 100.0);
         }
 
-        // --- 4. ASISTENCIA: (dias con Asistencia / total dias) x 10 x (%asistencia/100) ---
-        List<RegistroAsistencia> asistencias = registroAsistenciaDAO.listarPorAlumnoPeriodo(matricula, idPeriodo);
+        // --- 4. ASISTENCIA (usa el idPeriodo ANCLA, NO el de la materia) ---
+        List<RegistroAsistencia> asistencias = registroAsistenciaDAO.listarPorAlumnoPeriodo(matricula, idPeriodoAncla);
         double resultadoAsistencia = 0;
         if (!asistencias.isEmpty()) {
             long diasAsistio = asistencias.stream().filter(a -> "Asistencia".equals(a.getEstado())).count();
@@ -172,14 +198,14 @@ public class PromedioController {
             resultadoAsistencia = proporcion * 10 * (pctAsistencia / 100.0);
         }
 
-        // --- 5. DISCIPLINA: (10 - sumaPuntosMenos, minimo 0) x (%disciplina/100) ---
-        int sumaPuntosMenos = registroDisciplinaDAO.sumarPuntosMenosPorAlumnoPeriodo(matricula, idPeriodo);
+        // --- 5. DISCIPLINA (usa el idPeriodo ANCLA, NO el de la materia) ---
+        int sumaPuntosMenos = registroDisciplinaDAO.sumarPuntosMenosPorAlumnoPeriodo(matricula, idPeriodoAncla);
         double calificacionDisciplina = Math.max(0, 10 - sumaPuntosMenos);
         double resultadoDisciplina = calificacionDisciplina * (pctDisciplina / 100.0);
 
-        // --- SUMA FINAL, con clamping a minimo 5 ---
+        // --- SUMA FINAL, con clamping a [5, 10] (regla de negocio del cliente + limite fisico del CHECK de la BD) ---
         double sumaFinal = resultadoTarea + resultadoExamen + resultadoParticipacion + resultadoAsistencia + resultadoDisciplina;
-        double promedioFinalDouble = Math.max(5.0, sumaFinal);
+        double promedioFinalDouble = Math.min(10.0, Math.max(5.0, sumaFinal));
 
         BigDecimal promedioFinal = BigDecimal.valueOf(promedioFinalDouble).setScale(2, RoundingMode.HALF_UP);
 

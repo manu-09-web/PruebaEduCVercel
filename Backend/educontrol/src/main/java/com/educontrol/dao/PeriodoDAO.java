@@ -1,6 +1,7 @@
 package com.educontrol.dao;
 
 import com.educontrol.Main;
+import com.educontrol.modelos.CampoFormativo;
 import com.educontrol.modelos.Periodo;
 
 import java.sql.Connection;
@@ -44,7 +45,6 @@ public class PeriodoDAO {
         return null;
     }
 
-    // Verifica si un periodo esta abierto (para bloquear registros en periodos cerrados)
     public boolean estaAbierto(int idPeriodo) throws SQLException {
         String sql = "SELECT estado FROM periodo WHERE idPeriodo = ?";
 
@@ -92,7 +92,6 @@ public class PeriodoDAO {
         }
     }
 
-    // Cierra el periodo: cambia estado a 'Cerrado' y registra la fecha/hora de cierre
     public void cerrarPeriodo(int idPeriodo) throws SQLException {
         String sql = "UPDATE periodo SET estado = 'Cerrado', fechaCierre = NOW() WHERE idPeriodo = ?";
 
@@ -115,15 +114,117 @@ public class PeriodoDAO {
         }
     }
 
-    public Integer obtenerIdPeriodoAncla(int idGrupo, String periodoTexto) throws SQLException {
-        String sql = "SELECT idPeriodo FROM periodo WHERE idGrupo = ? AND periodo = ? " +
-                    "ORDER BY idCampoFormativo ASC LIMIT 1";
+    // ================== NUEVOS METODOS ==================
+
+    // Todas las filas de PERIODO actualmente Abiertas para un grupo (una por cada Campo Formativo del grado)
+    public List<Periodo> listarAbiertosPorGrupo(int idGrupo) throws SQLException {
+        List<Periodo> lista = new ArrayList<>();
+        String sql = "SELECT * FROM periodo WHERE idGrupo = ? AND estado = 'Abierto'";
 
         try (Connection conn = Main.conectar();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idGrupo);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                lista.add(mapear(rs));
+            }
+        }
+        return lista;
+    }
+
+    // Cuenta cuantas filas de PERIODO existen (abiertas o cerradas) para un grupo,
+    // para saber si el grupo nunca ha sido inicializado.
+    public int contarPorGrupo(int idGrupo) throws SQLException {
+        String sql = "SELECT COUNT(*) as total FROM periodo WHERE idGrupo = ?";
+
+        try (Connection conn = Main.conectar();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idGrupo);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("total");
+            }
+        }
+        return 0;
+    }
+
+    // El numero de periodo mas alto que se ha usado alguna vez para un grupo (para saber si ya se llego al 3)
+    public int obtenerNumeroPeriodoMasAlto(int idGrupo) throws SQLException {
+        String sql = "SELECT MAX(CAST(periodo AS UNSIGNED)) as maxNum FROM periodo WHERE idGrupo = ?";
+
+        try (Connection conn = Main.conectar();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idGrupo);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("maxNum");
+            }
+        }
+        return 0;
+    }
+
+    // Cierra TODAS las filas de un grupo+periodo en una sola operacion por lote
+    public void cerrarPorGrupoYPeriodo(int idGrupo, String periodoTexto) throws SQLException {
+        String sql = "UPDATE periodo SET estado = 'Cerrado', fechaCierre = NOW() WHERE idGrupo = ? AND periodo = ?";
+
+        try (Connection conn = Main.conectar();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, idGrupo);
             stmt.setString(2, periodoTexto);
+            stmt.executeUpdate();
+        }
+    }
+
+    // Crea una fila de PERIODO por cada Campo Formativo del grado, todas Abiertas, mismo texto de periodo
+    public void crearFilasParaPeriodo(int idGrupo, String periodoTexto, List<CampoFormativo> campos) throws SQLException {
+        String sql = "INSERT INTO periodo (estado, periodo, idGrupo, idCampoFormativo) VALUES ('Abierto', ?, ?, ?)";
+
+        try (Connection conn = Main.conectar();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            for (CampoFormativo campo : campos) {
+                stmt.setString(1, periodoTexto);
+                stmt.setInt(2, idGrupo);
+                stmt.setInt(3, campo.getIdCampoFormativo());
+                stmt.addBatch();
+            }
+            stmt.executeBatch();
+        }
+    }
+
+    // Resuelve el "periodo ancla" de un grupo+periodo (menor idCampoFormativo) para Asistencia/Disciplina
+    public Integer obtenerIdPeriodoAncla(int idGrupo, String periodoTexto) throws SQLException {
+        String sql = "SELECT idPeriodo FROM periodo WHERE idGrupo = ? AND periodo = ? " +
+                     "ORDER BY idCampoFormativo ASC LIMIT 1";
+
+        try (Connection conn = Main.conectar();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idGrupo);
+            stmt.setString(2, periodoTexto);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getInt("idPeriodo");
+            }
+        }
+        return null;
+    }
+
+    // Da el idPeriodo correspondiente a un Campo Formativo especifico, dentro del periodo abierto de un grupo
+    public Integer obtenerIdPeriodoAbiertoPorCampo(int idGrupo, int idCampoFormativo) throws SQLException {
+        String sql = "SELECT idPeriodo FROM periodo WHERE idGrupo = ? AND idCampoFormativo = ? AND estado = 'Abierto'";
+
+        try (Connection conn = Main.conectar();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idGrupo);
+            stmt.setInt(2, idCampoFormativo);
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {

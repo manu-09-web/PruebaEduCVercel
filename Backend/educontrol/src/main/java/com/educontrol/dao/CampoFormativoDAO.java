@@ -43,6 +43,24 @@ public class CampoFormativoDAO {
         return null;
     }
 
+    // Todos los Campos Formativos de un grado (ej. los 4 de "4to grado")
+    public List<CampoFormativo> listarPorGrado(int grado) throws SQLException {
+        List<CampoFormativo> lista = new ArrayList<>();
+        String sql = "SELECT * FROM campo_formativo WHERE Grado = ?";
+
+        try (Connection conn = Main.conectar();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, grado);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                lista.add(mapear(rs));
+            }
+        }
+        return lista;
+    }
+
     public void crear(CampoFormativo campo) throws SQLException {
         String sql = "INSERT INTO campo_formativo (Nombre, Grado, CicloEscolar) VALUES (?, ?, ?)";
 
@@ -90,22 +108,5 @@ public class CampoFormativoDAO {
             rs.getInt("Grado"),
             rs.getString("CicloEscolar")
         );
-    }
-
-    public List<CampoFormativo> listarPorGrado(int grado) throws SQLException {
-        List<CampoFormativo> lista = new ArrayList<>();
-        String sql = "SELECT * FROM campo_formativo WHERE Grado = ?";
-
-        try (Connection conn = Main.conectar();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, grado);
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                lista.add(mapear(rs));
-            }
-        }
-        return lista;
     }
 }

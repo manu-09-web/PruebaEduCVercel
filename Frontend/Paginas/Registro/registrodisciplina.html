@@ -55,30 +55,27 @@
         </aside>
 
         <main class="dashboard-main">
-            <form id="form-registro" class="contenedor-tarjeta-blanca" onsubmit="event.preventDefault(); mostrarAlertaExito();">
+            <form id="form-registro" class="contenedor-tarjeta-blanca" onsubmit="event.preventDefault(); guardarRegistro();">
                 <h1 class="titulo-formulario">Registrar Disciplina</h1>
-                
+
                 <div class="fila-filtros-superiores">
                     <div class="grupo-campo-filtro">
                         <label>Grado:</label>
-                        <input type="text" class="input-bloqueado-bd" value="6°" readonly>
+                        <input type="text" id="input-grado" class="input-bloqueado-bd" value="" readonly>
                     </div>
                     <div class="grupo-campo-filtro">
                         <label>Grupo:</label>
-                        <input type="text" class="input-bloqueado-bd" value="A" readonly>
+                        <input type="text" id="input-grupo" class="input-bloqueado-bd" value="" readonly>
                     </div>
                     <div class="grupo-campo-filtro">
                         <label>Periodo:</label>
-                        <select class="select-pildora" required>
-                            <option value="" disabled selected>Seleccione...</option>
-                            <option value="1">1° Periodo</option>
-                            <option value="2">2° Periodo</option>
-                            <option value="3">3° Periodo</option>
+                        <select id="select-periodo" class="select-pildora" disabled>
+                            <option value="">Cargando...</option>
                         </select>
                     </div>
                     <div class="grupo-campo-filtro">
                         <label>Ciclo Escolar:</label>
-                        <input type="text" class="input-bloqueado-bd" value="2025 - 2026" readonly>
+                        <input type="text" id="input-ciclo" class="input-bloqueado-bd" value="" readonly>
                     </div>
                 </div>
 
@@ -92,27 +89,8 @@
                                 <th style="width: 30%;">Observaciones</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>1</td>
-                                <td class="celda-nombre-alumno">Abadía Solís Ana Laura</td>
-                                <td>
-                                    <input type="number" class="input-tabla-pildora" value="0" min="0" step="1">
-                                </td>
-                                <td>
-                                    <input type="text" class="input-linea-tabla" placeholder="Sin observaciones">
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>2</td>
-                                <td class="celda-nombre-alumno">Aguilar Ruiz Carlos Alberto</td>
-                                <td>
-                                    <input type="number" class="input-tabla-pildora" value="0" min="0" step="1">
-                                </td>
-                                <td>
-                                    <input type="text" class="input-linea-tabla" placeholder="Sin observaciones">
-                                </td>
-                            </tr>
+                        <tbody id="tabla-cuerpo">
+                            <tr><td colspan="4">Cargando alumnos...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -131,12 +109,6 @@
         <p>Ingeniería en Tecnologías de la Información e Innovación Digital<br>Universidad Politécnica de Chiapas</p>
     </footer>
 
-    <script>
-        function mostrarAlertaExito() {
-            const alerta = document.getElementById('alerta-exito');
-            alerta.classList.add('mostrar-alerta');
-            setTimeout(() => { alerta.classList.remove('mostrar-alerta'); }, 3500);
-        }
-    </script>
+    <script src="../../JS/registrarDisciplina.js"></script>
 </body>
 </html>

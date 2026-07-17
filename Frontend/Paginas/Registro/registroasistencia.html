@@ -55,37 +55,34 @@
         </aside>
 
         <main class="dashboard-main">
-            <form id="form-registro" class="contenedor-tarjeta-blanca" onsubmit="event.preventDefault(); mostrarAlertaExito();">
+            <form id="form-registro" class="contenedor-tarjeta-blanca" onsubmit="event.preventDefault(); guardarRegistro();">
                 <h1 class="titulo-formulario">Registrar Asistencia</h1>
-                
+
                 <div class="fila-filtros-superiores">
                     <div class="grupo-campo-filtro">
                         <label>Grado:</label>
-                        <input type="text" class="input-bloqueado-bd" value="6°" readonly>
+                        <input type="text" id="input-grado" class="input-bloqueado-bd" value="" readonly>
                     </div>
                     <div class="grupo-campo-filtro">
                         <label>Grupo:</label>
-                        <input type="text" class="input-bloqueado-bd" value="A" readonly>
+                        <input type="text" id="input-grupo" class="input-bloqueado-bd" value="" readonly>
                     </div>
                     <div class="grupo-campo-filtro">
                         <label>Periodo:</label>
-                        <select class="select-pildora" required>
-                            <option value="" disabled selected>Seleccione...</option>
-                            <option value="1">1° Periodo</option>
-                            <option value="2">2° Periodo</option>
-                            <option value="3">3° Periodo</option>
+                        <select id="select-periodo" class="select-pildora" disabled>
+                            <option value="">Cargando...</option>
                         </select>
                     </div>
                     <div class="grupo-campo-filtro">
                         <label>Ciclo Escolar:</label>
-                        <input type="text" class="input-bloqueado-bd" value="2025 - 2026" readonly>
+                        <input type="text" id="input-ciclo" class="input-bloqueado-bd" value="" readonly>
                     </div>
                 </div>
 
                 <div class="seccion-datos-examen">
                     <div class="fila-formulario-horizontal">
                         <label class="label-ancho-fijo">Fecha de Asistencia:</label>
-                        <input type="date" class="select-pildora" style="width: auto; padding: 0 12px;" required>
+                        <input type="date" id="input-fecha" class="select-pildora" style="width: auto; padding: 0 12px;" required>
                     </div>
                 </div>
 
@@ -103,21 +100,8 @@
                                 <th style="font-size: 12px; padding: 8px; background-color: #ffffff; color: #0b2545; border-bottom: 1px solid #e2e8f0;">Permiso</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>1</td>
-                                <td class="celda-nombre-alumno">Abadía Solís Ana Laura</td>
-                                <td><input type="radio" name="estado_alumno_1" value="asistencia" class="radio-asistencia radio-verde" checked></td>
-                                <td><input type="radio" name="estado_alumno_1" value="falta" class="radio-asistencia radio-rojo"></td>
-                                <td><input type="radio" name="estado_alumno_1" value="permiso" class="radio-asistencia radio-amarillo"></td>
-                            </tr>
-                            <tr>
-                                <td>2</td>
-                                <td class="celda-nombre-alumno">Aguilar Ruiz Carlos Alberto</td>
-                                <td><input type="radio" name="estado_alumno_2" value="asistencia" class="radio-asistencia radio-verde" checked></td>
-                                <td><input type="radio" name="estado_alumno_2" value="falta" class="radio-asistencia radio-rojo"></td>
-                                <td><input type="radio" name="estado_alumno_2" value="permiso" class="radio-asistencia radio-amarillo"></td>
-                            </tr>
+                        <tbody id="tabla-cuerpo">
+                            <tr><td colspan="5">Cargando alumnos...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -136,12 +120,6 @@
         <p>Ingeniería en Tecnologías de la Información e Innovación Digital<br>Universidad Politécnica de Chiapas</p>
     </footer>
 
-    <script>
-        function mostrarAlertaExito() {
-            const alerta = document.getElementById('alerta-exito');
-            alerta.classList.add('mostrar-alerta');
-            setTimeout(() => { alerta.classList.remove('mostrar-alerta'); }, 3500);
-        }
-    </script>
+    <script src="../../JS/registrarAsistencia.js"></script>
 </body>
 </html>

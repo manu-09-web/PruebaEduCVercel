@@ -1,5 +1,5 @@
 /// URL base del backend
-const API_URL = 'https://despliegueeduc.duckdns.orggueeduc.duckdns.org:7000';
+const API_URL = 'https://despliegueeduc.duckdns.org';
 
 document.addEventListener('DOMContentLoaded', () => {
     const btnDirector = document.getElementById('btn-director');

@@ -1,4 +1,4 @@
-const API_URL = 'https://despliegueeduc.duckdns.orggueeduc.duckdns.org:7000';
+const API_URL = 'https://despliegueeduc.duckdns.org';
 
 let rolUsuarioActual = null;
 let idUsuarioActual = null;

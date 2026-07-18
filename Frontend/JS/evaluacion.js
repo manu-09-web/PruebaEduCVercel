@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:7000';
+const API_URL = 'https://despliegueeduc.duckdns.org:7000';
 
 let rolUsuarioActual = null;
 let idUsuarioActual = null;

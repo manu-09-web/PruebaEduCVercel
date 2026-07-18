@@ -38,6 +38,16 @@ public class AsignarGrupoController {
         app.post("/asignar-grupo", ctx -> {
             try {
                 AsignarGrupo asignacion = ctx.bodyAsClass(AsignarGrupo.class);
+
+                if (dao.obtenerPorUsuario(asignacion.getIdUsuario()) != null) {
+                    ctx.status(409).result("Este docente ya tiene un grupo asignado. Quítaselo primero antes de asignarle otro.");
+                    return;
+                }
+                if (dao.obtenerPorGrupo(asignacion.getIdGrupo()) != null) {
+                    ctx.status(409).result("Este grupo ya tiene un docente asignado. Quítaselo primero antes de asignar otro.");
+                    return;
+                }
+
                 dao.crear(asignacion);
                 ctx.status(201).result("Grupo asignado correctamente");
             } catch (SQLException e) {
@@ -50,6 +60,13 @@ public class AsignarGrupoController {
                 int idUsuario = Integer.parseInt(ctx.pathParam("idUsuario"));
                 AsignarGrupo asignacion = ctx.bodyAsClass(AsignarGrupo.class);
                 asignacion.setIdUsuario(idUsuario);
+
+                AsignarGrupo otroConEseGrupo = dao.obtenerPorGrupo(asignacion.getIdGrupo());
+                if (otroConEseGrupo != null && otroConEseGrupo.getIdUsuario() != idUsuario) {
+                    ctx.status(409).result("Ese grupo ya tiene otro docente asignado.");
+                    return;
+                }
+
                 dao.actualizar(asignacion);
                 ctx.result("Asignación actualizada correctamente");
             } catch (SQLException e) {

@@ -41,7 +41,6 @@
                 <a href="../Grupos/listagrupos.html" class="item-menu">
                     <img src="../../Img/IconosDashboard/Gruposvg.svg" alt="Grupo"> Grupo
                 </a>
-                <!-- CORREGIDO: Se añadió la ruta hacia Reportes -->
                 <a href="../Reportes/menurepo.html" class="item-menu">
                     <img src="../../Img/IconosDashboard/Reportes.svg" alt="Reportes"> Reportes
                 </a>
@@ -50,11 +49,21 @@
 
         <main class="dashboard-main">
             <div class="contenedor-tarjeta-blanca" style="padding-bottom: 30px;">
-                
-                <h1 class="titulo-formulario" style="margin-bottom: 20px;">Rendimiento académico</h1>
-                
+
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 20px;">
+                    <h1 class="titulo-formulario" style="margin: 0;">Rendimiento académico</h1>
+                    <div class="item-filtro-mini" style="display:flex; align-items:center; gap:6px;">
+                        <label style="font-family:'Poppins', sans-serif; font-weight:600; color:#0b2545; font-size:14px;">Periodo:</label>
+                        <select id="select-periodo" class="select-pildora" style="width: auto; padding: 4px 25px 4px 12px;">
+                            <option value="1">Primer periodo</option>
+                            <option value="2">Segundo periodo</option>
+                            <option value="3">Tercer periodo</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="contenedor-grid-rendimiento">
-                    
+
                     <div class="tarjeta-analitica">
                         <h2>Promedio grupal</h2>
                         <div class="contenedor-progreso-circular">
@@ -72,7 +81,7 @@
 
                     <div class="tarjeta-analitica tarjeta-resumen-horizontal">
                         <h2>Resumen del grupo</h2>
-                        
+
                         <div class="fila-resumen-dato">
                             <span>Total de alumnos</span>
                             <span class="valor-dato-resumen">
@@ -92,7 +101,7 @@
 
                     <div class="tarjeta-analitica tarjeta-resumen-horizontal">
                         <h2>Resumen del grupo</h2>
-                        
+
                         <div class="fila-resumen-dato">
                             <span>Reprobados</span>
                             <span class="valor-dato-resumen">
@@ -119,6 +128,6 @@
         <img src="../../Img/Logos/LogoUp.png" alt="UP Chiapas">
         <p>Ingeniería en Tecnologías de la Información e Innovación Digital<br>Universidad Politécnica de Chiapas</p>
     </footer>
-    <script src="../../JS/preuba.js"></script>
+    <script src="../../JS/rendimiento.js"></script>
 </body>
 </html>

@@ -26,6 +26,7 @@ import com.educontrol.controllers.RegistroExamenController;
 import com.educontrol.controllers.DetalleExamenController;
 import com.educontrol.controllers.PeriodoController;
 import com.educontrol.controllers.PromedioController;
+import com.educontrol.controllers.ReporteController;
 import com.educontrol.controllers.AlumnoGrupoController;
 import com.educontrol.controllers.LoginController;
 
@@ -97,6 +98,7 @@ public class Main {
         DetalleExamenController.registrarRutas(app);
         PeriodoController.registrarRutas(app);
         PromedioController.registrarRutas(app);
+        ReporteController.registrarRutas(app);
         AlumnoGrupoController.registrarRutas(app);
         LoginController.registrarRutas(app);
         ConfigCriteriosController.registrarRutas(app);

@@ -100,10 +100,7 @@
     height: auto;
 }
 
-/* --- Contenido principal: contenedor base neutro ---
-   IMPORTANTE: no lleva align-items aquí, para que cada vista
-   decida su propio comportamiento (centrado o alineado a la izquierda)
-   sin romper a las demás. Ver sección 2 para el ajuste de esta vista. */
+/* --- Contenido principal: contenedor base neutro --- */
 .dashboard-main {
     grid-area: main;
     padding: 40px;

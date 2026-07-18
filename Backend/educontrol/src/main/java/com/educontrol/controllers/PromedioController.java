@@ -1,11 +1,15 @@
 package com.educontrol.controllers;
 
+import com.educontrol.dao.AlumnoDAO;
+import com.educontrol.dao.AlumnoGrupoDAO;
 import com.educontrol.dao.ConfigAsistenciaDAO;
 import com.educontrol.dao.ConfigDisciplinaDAO;
 import com.educontrol.dao.ConfigExamenDAO;
 import com.educontrol.dao.ConfigParticipacionDAO;
 import com.educontrol.dao.ConfigTareaDAO;
 import com.educontrol.dao.DetalleExamenDAO;
+import com.educontrol.dao.CampoFormativoDAO;
+import com.educontrol.dao.GrupoDAO;
 import com.educontrol.dao.PeriodoDAO;
 import com.educontrol.dao.PromedioDAO;
 import com.educontrol.dao.RegistroAsistenciaDAO;
@@ -13,12 +17,16 @@ import com.educontrol.dao.RegistroDisciplinaDAO;
 import com.educontrol.dao.RegistroExamenDAO;
 import com.educontrol.dao.RegistroParticipacionDAO;
 import com.educontrol.dao.RegistroTareaDAO;
+import com.educontrol.modelos.Alumno;
+import com.educontrol.modelos.AlumnoGrupo;
+import com.educontrol.modelos.CampoFormativo;
 import com.educontrol.modelos.ConfigAsistencia;
 import com.educontrol.modelos.ConfigDisciplina;
 import com.educontrol.modelos.ConfigExamen;
 import com.educontrol.modelos.ConfigParticipacion;
 import com.educontrol.modelos.ConfigTarea;
 import com.educontrol.modelos.DetalleExamen;
+import com.educontrol.modelos.Grupo;
 import com.educontrol.modelos.Periodo;
 import com.educontrol.modelos.Promedio;
 import com.educontrol.modelos.RegistroAsistencia;
@@ -30,6 +38,7 @@ import io.javalin.Javalin;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,8 +60,76 @@ public class PromedioController {
 
     private static final PeriodoDAO periodoDAO = new PeriodoDAO();
     private static final PromedioDAO promedioDAO = new PromedioDAO();
+    private static final GrupoDAO grupoDAO = new GrupoDAO();
+    private static final CampoFormativoDAO campoFormativoDAO = new CampoFormativoDAO();
+    private static final AlumnoGrupoDAO alumnoGrupoDAO = new AlumnoGrupoDAO();
+    private static final AlumnoDAO alumnoDAO = new AlumnoDAO();
 
     public static void registrarRutas(Javalin app) {
+
+        // Da los promedios YA CALCULADOS del grupo del Docente logueado, para un periodo especifico
+        // (1, 2 o 3). Un registro por alumno x Campo Formativo. Sirve para las 3 pantallas de Calificaciones.
+        app.get("/promedio/mi-grupo", ctx -> {
+            try {
+                Integer idUsuario = ctx.sessionAttribute("idUsuario");
+                if (idUsuario == null) {
+                    ctx.status(401).result("No autorizado. Debes iniciar sesion.");
+                    return;
+                }
+
+                Integer idGrupo = SeguridadUtil.obtenerGrupoDelDocente(ctx);
+                if (idGrupo == null) {
+                    ctx.status(403).result("Este endpoint es solo para Docentes con grupo asignado");
+                    return;
+                }
+
+                String periodoTexto = ctx.queryParam("periodo");
+                if (periodoTexto == null || periodoTexto.isBlank()) {
+                    periodoTexto = "1";
+                }
+
+                ctx.json(obtenerPromediosDeGrupo(idGrupo, periodoTexto));
+
+            } catch (SQLException e) {
+                ctx.status(500).result("Error: " + e.getMessage());
+            }
+        });
+
+        // Igual que /promedio/mi-grupo, pero para que el Director consulte CUALQUIER grupo
+        // especificando el idGrupo (solo lectura).
+        app.get("/promedio/grupo", ctx -> {
+            try {
+                Integer idUsuario = ctx.sessionAttribute("idUsuario");
+                String rol = ctx.sessionAttribute("rol");
+                if (idUsuario == null) {
+                    ctx.status(401).result("No autorizado. Debes iniciar sesion.");
+                    return;
+                }
+                if (!"Director".equals(rol)) {
+                    ctx.status(403).result("Solo el Director puede consultar el promedio de cualquier grupo");
+                    return;
+                }
+
+                String idGrupoParam = ctx.queryParam("idGrupo");
+                if (idGrupoParam == null || idGrupoParam.isBlank()) {
+                    ctx.status(400).result("Falta el parametro idGrupo");
+                    return;
+                }
+                int idGrupo = Integer.parseInt(idGrupoParam);
+
+                String periodoTexto = ctx.queryParam("periodo");
+                if (periodoTexto == null || periodoTexto.isBlank()) {
+                    periodoTexto = "1";
+                }
+
+                ctx.json(obtenerPromediosDeGrupo(idGrupo, periodoTexto));
+
+            } catch (NumberFormatException e) {
+                ctx.status(400).result("idGrupo invalido");
+            } catch (SQLException e) {
+                ctx.status(500).result("Error: " + e.getMessage());
+            }
+        });
 
         // Calcula el promedio SIN guardarlo (para previsualizar antes de cerrar periodo)
         app.get("/promedio/calcular", ctx -> {
@@ -108,6 +185,53 @@ public class PromedioController {
         });
     }
 
+    // Arma la lista de promedios de un grupo para un periodo dado. Itera desde los Campos Formativos
+    // del GRADO (que siempre existen), no desde las filas de PERIODO (que pueden no existir todavia
+    // si ese periodo nunca se ha abierto) -- asi los alumnos siempre aparecen, aunque el promedio
+    // de ese periodo aun no se haya calculado (sale null / "-").
+    private static List<Map<String, Object>> obtenerPromediosDeGrupo(int idGrupo, String periodoTexto) throws SQLException {
+        Grupo grupo = grupoDAO.obtenerPorId(idGrupo);
+        if (grupo == null) {
+            throw new SQLException("No se encontro el grupo " + idGrupo);
+        }
+
+        List<CampoFormativo> campos = campoFormativoDAO.listarPorGrado(grupo.getGrado());
+        List<Periodo> periodosDelTexto = periodoDAO.listarPorGrupoYPeriodo(idGrupo, periodoTexto);
+        List<AlumnoGrupo> alumnosDelGrupo = alumnoGrupoDAO.listarPorGrupo(idGrupo);
+
+        List<Map<String, Object>> resultado = new ArrayList<>();
+
+        for (AlumnoGrupo ag : alumnosDelGrupo) {
+            Alumno alumno = alumnoDAO.obtenerPorMatricula(ag.getMatricula());
+            String nombreAlumno = alumno != null
+                ? alumno.getNombre() + " " + alumno.getApellidoPaterno() + " " + alumno.getApellidoMaterno()
+                : ("Matricula " + ag.getMatricula());
+
+            for (CampoFormativo campo : campos) {
+                Periodo periodoDeMateria = periodosDelTexto.stream()
+                    .filter(p -> p.getIdCampoFormativo() == campo.getIdCampoFormativo())
+                    .findFirst().orElse(null);
+
+                BigDecimal promedioFinal = null;
+                if (periodoDeMateria != null) {
+                    Promedio prom = promedioDAO.obtenerPorMatriculaCampoPeriodo(
+                        ag.getMatricula(), campo.getIdCampoFormativo(), periodoDeMateria.getIdPeriodo());
+                    promedioFinal = prom != null ? prom.getPromedioFinal() : null;
+                }
+
+                Map<String, Object> item = new HashMap<>();
+                item.put("matricula", ag.getMatricula());
+                item.put("nombreAlumno", nombreAlumno);
+                item.put("idCampoFormativo", campo.getIdCampoFormativo());
+                item.put("nombreCampoFormativo", campo.getNombre());
+                item.put("promedioFinal", promedioFinal);
+                resultado.add(item);
+            }
+        }
+
+        return resultado;
+    }
+
     // Calcula el promedio Y lo guarda (upsert). Publico y estatico para que CierrePeriodoController lo reutilice.
     public static BigDecimal calcularYGuardarPromedio(int idUsuario, int matricula, int idCampoFormativo, int idPeriodo, int grado) throws SQLException {
         Map<String, Object> resultado = calcularPromedio(idUsuario, matricula, idCampoFormativo, idPeriodo, grado);
@@ -127,9 +251,7 @@ public class PromedioController {
 
     public static Map<String, Object> calcularPromedio(int idUsuario, int matricula, int idCampoFormativo, int idPeriodo, int grado) throws SQLException {
 
-        // --- Resolver el periodo ANCLA (para Asistencia/Disciplina) ---
-        // idPeriodo llega como el especifico de ESTA materia; necesitamos el idGrupo y el texto
-        // de periodo para encontrar el ancla real (menor idCampoFormativo) del grupo+periodo.
+
         Periodo periodoMateria = periodoDAO.obtenerPorId(idPeriodo);
         if (periodoMateria == null) {
             throw new SQLException("El periodo especificado (" + idPeriodo + ") no existe.");
@@ -152,7 +274,7 @@ public class PromedioController {
         int pctAsistencia = configAsistencia != null ? configAsistencia.getPorcentaje() : 0;
         int pctDisciplina = configDisciplina != null ? configDisciplina.getPorcentaje() : 0;
 
-        // --- 1. TAREA (usa idPeriodo especifico de la materia) ---
+        // --- 1. TAREA 
         List<RegistroTarea> tareas = registroTareaDAO.listarPorAlumnoCampoPeriodo(matricula, idCampoFormativo, idPeriodo);
         double resultadoTarea = 0;
         if (!tareas.isEmpty()) {
@@ -161,7 +283,7 @@ public class PromedioController {
             resultadoTarea = proporcion * 10 * (pctTarea / 100.0);
         }
 
-        // --- 2. EXAMEN (usa idPeriodo especifico de la materia) ---
+        // --- 2. EXAMEN 
         List<RegistroExamen> examenes = registroExamenDAO.listarPorAlumnoCampoPeriodo(matricula, idCampoFormativo, idPeriodo);
         double resultadoExamen = 0;
         if (!examenes.isEmpty()) {
@@ -180,7 +302,7 @@ public class PromedioController {
             }
         }
 
-        // --- 3. PARTICIPACION (usa idPeriodo especifico de la materia) ---
+        // --- 3. PARTICIPACION 
         List<RegistroParticipacion> participaciones = registroParticipacionDAO.listarPorAlumnoCampoPeriodo(matricula, idCampoFormativo, idPeriodo);
         double resultadoParticipacion = 0;
         if (!participaciones.isEmpty()) {
@@ -189,7 +311,7 @@ public class PromedioController {
             resultadoParticipacion = promedioPuntuacion * (pctParticipacion / 100.0);
         }
 
-        // --- 4. ASISTENCIA (usa el idPeriodo ANCLA, NO el de la materia) ---
+        // --- 4. ASISTENCIA 
         List<RegistroAsistencia> asistencias = registroAsistenciaDAO.listarPorAlumnoPeriodo(matricula, idPeriodoAncla);
         double resultadoAsistencia = 0;
         if (!asistencias.isEmpty()) {
@@ -198,12 +320,12 @@ public class PromedioController {
             resultadoAsistencia = proporcion * 10 * (pctAsistencia / 100.0);
         }
 
-        // --- 5. DISCIPLINA (usa el idPeriodo ANCLA, NO el de la materia) ---
+        // --- 5. DISCIPLINA 
         int sumaPuntosMenos = registroDisciplinaDAO.sumarPuntosMenosPorAlumnoPeriodo(matricula, idPeriodoAncla);
         double calificacionDisciplina = Math.max(0, 10 - sumaPuntosMenos);
         double resultadoDisciplina = calificacionDisciplina * (pctDisciplina / 100.0);
 
-        // --- SUMA FINAL, con clamping a [5, 10] (regla de negocio del cliente + limite fisico del CHECK de la BD) ---
+        // --- SUMA FINAL
         double sumaFinal = resultadoTarea + resultadoExamen + resultadoParticipacion + resultadoAsistencia + resultadoDisciplina;
         double promedioFinalDouble = Math.min(10.0, Math.max(5.0, sumaFinal));
 

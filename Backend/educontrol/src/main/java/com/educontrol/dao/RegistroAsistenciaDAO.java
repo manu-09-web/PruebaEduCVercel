@@ -110,6 +110,24 @@ public class RegistroAsistenciaDAO {
         return lista;
     }
 
+    // Todos los registros de asistencia de un periodo (de TODOS los alumnos), para reportes agregados
+    public List<RegistroAsistencia> listarPorPeriodo(int idPeriodo) throws SQLException {
+        List<RegistroAsistencia> lista = new ArrayList<>();
+        String sql = "SELECT * FROM registro_asistencia WHERE idPeriodo = ?";
+
+        try (Connection conn = Main.conectar();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idPeriodo);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                lista.add(mapear(rs));
+            }
+        }
+        return lista;
+    }
+
     private RegistroAsistencia mapear(ResultSet rs) throws SQLException {
         Date fechaSql = rs.getDate("fecha");
 

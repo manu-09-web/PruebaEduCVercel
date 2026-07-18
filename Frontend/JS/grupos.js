@@ -1,9 +1,11 @@
 const API_URL = 'http://localhost:7000';
+const UMBRAL_APROBATORIO = 6;
 
 let rolUsuarioActual = null;
 let listaDocentes = [];
 let mapaAsignaciones = {}; // idGrupo -> idUsuario
 let grupoSeleccionadoId = null;
+let resumenActual = null; // { idGrupo, grado, grupoLetra, nombreDocente }
 
 document.addEventListener('DOMContentLoaded', async () => {
     const sesion = await obtenerSesion();
@@ -56,23 +58,53 @@ async function cargarDocentes() {
         if (!response.ok) return;
         const usuarios = await response.json();
         listaDocentes = usuarios.filter(u => u.rol === 'Docente');
-        llenarSelectsDocente();
     } catch (error) {
         console.error('Error cargando docentes:', error);
     }
 }
 
-function llenarSelectsDocente() {
-    const selects = [document.getElementById('docente'), document.getElementById('editDocente')];
-    selects.forEach(select => {
-        if (!select) return;
-        select.innerHTML = '<option value="" disabled selected>Seleccione un docente...</option>';
-        listaDocentes.forEach(doc => {
-            const option = document.createElement('option');
-            option.value = doc.idUsuario;
-            option.textContent = `${doc.nombre} ${doc.apellidoPaterno} ${doc.apellidoMaterno}`;
-            select.appendChild(option);
-        });
+function llenarSelectRegistrar() {
+    const select = document.getElementById('docente');
+    if (!select) return;
+
+    const idsAsignados = new Set(Object.values(mapaAsignaciones).map(v => parseInt(v)));
+    const disponibles = listaDocentes.filter(d => !idsAsignados.has(d.idUsuario));
+
+    select.innerHTML = '<option value="" disabled selected>Seleccione un docente...</option>';
+    disponibles.forEach(doc => {
+        const option = document.createElement('option');
+        option.value = doc.idUsuario;
+        option.textContent = `${doc.nombre} ${doc.apellidoPaterno} ${doc.apellidoMaterno}`;
+        select.appendChild(option);
+    });
+
+    if (disponibles.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No hay docentes disponibles';
+        option.disabled = true;
+        select.appendChild(option);
+    }
+}
+
+function llenarSelectEditar(idGrupoActual) {
+    const select = document.getElementById('editDocente');
+    if (!select) return;
+
+    const idDocenteActual = mapaAsignaciones[idGrupoActual] ? parseInt(mapaAsignaciones[idGrupoActual]) : null;
+    const idsAsignados = new Set(Object.values(mapaAsignaciones).map(v => parseInt(v)));
+
+    const disponibles = listaDocentes.filter(d =>
+        !idsAsignados.has(d.idUsuario) || d.idUsuario === idDocenteActual
+    );
+
+    select.innerHTML = '<option value="">Sin asignar</option>';
+    disponibles.forEach(doc => {
+        const option = document.createElement('option');
+        option.value = doc.idUsuario;
+        option.textContent = `${doc.nombre} ${doc.apellidoPaterno} ${doc.apellidoMaterno}`;
+        if (doc.idUsuario === idDocenteActual) option.selected = true;
+        select.appendChild(option);
     });
 }
 
@@ -142,6 +174,77 @@ function renderizarTabla(grupos) {
 }
 
 // ==========================================================
+// RESUMEN DEL GRUPO (con datos reales de /promedio/grupo)
+// ==========================================================
+
+async function cargarResumenGrupo(idGrupo, grado, grupoLetra, nombreDocente) {
+    resumenActual = { idGrupo, grado, grupoLetra, nombreDocente };
+
+    document.getElementById('verTituloGrupo').innerText = `${grado} "${grupoLetra}"`;
+    document.getElementById('verDocente').innerText = `Prof. ${nombreDocente}`;
+    document.getElementById('verPromedio').innerText = '...';
+    document.getElementById('verTotalAlumnos').innerText = '...';
+    document.getElementById('verAprobados').innerText = '...';
+    document.getElementById('verReprobados').innerText = '...';
+    document.getElementById('verPorcentaje').innerText = '...';
+
+    const selectPeriodo = document.getElementById('select-periodo-resumen');
+    const periodo = selectPeriodo ? selectPeriodo.value : '1';
+
+    try {
+        const response = await fetch(`${API_URL}/promedio/grupo?idGrupo=${idGrupo}&periodo=${periodo}`, { credentials: 'include' });
+        if (!response.ok) {
+            mostrarToast('advertencia', 'No se pudo cargar el rendimiento de este grupo');
+            return;
+        }
+
+        const datos = await response.json();
+        const promediosPorAlumno = calcularPromedioPorAlumno(datos);
+
+        const totalAlumnos = promediosPorAlumno.length;
+        const aprobados = promediosPorAlumno.filter(p => p >= UMBRAL_APROBATORIO).length;
+        const reprobados = totalAlumnos - aprobados;
+        const promedioGrupal = totalAlumnos > 0
+            ? Math.round((promediosPorAlumno.reduce((a, b) => a + b, 0) / totalAlumnos) * 100) / 100
+            : 0;
+        const porcentaje = totalAlumnos > 0 ? Math.round((aprobados / totalAlumnos) * 1000) / 10 : 0;
+
+        document.getElementById('verPromedio').innerText = promedioGrupal.toFixed(1);
+        document.getElementById('verTotalAlumnos').innerText = totalAlumnos;
+        document.getElementById('verAprobados').innerText = `${aprobados} ✔`;
+        document.getElementById('verReprobados').innerText = `${reprobados} ❌`;
+        document.getElementById('verPorcentaje').innerText = porcentaje;
+
+        const anillo = document.getElementById('anilloProgreso');
+        if (anillo) {
+            const deesfaseMaximo = 251.2;
+            const offsetCalculado = deesfaseMaximo - (promedioGrupal / 10) * deesfaseMaximo;
+            anillo.style.strokeDashoffset = offsetCalculado;
+        }
+    } catch (error) {
+        console.error('Error cargando resumen del grupo:', error);
+        mostrarToast('advertencia', 'No se pudo conectar con el servidor');
+    }
+}
+
+function calcularPromedioPorAlumno(datos) {
+    const alumnosMap = new Map();
+    datos.forEach(item => {
+        if (!alumnosMap.has(item.matricula)) alumnosMap.set(item.matricula, []);
+        if (item.promedioFinal !== null && item.promedioFinal !== undefined) {
+            alumnosMap.get(item.matricula).push(item.promedioFinal);
+        }
+    });
+
+    const resultado = [];
+    alumnosMap.forEach((valores) => {
+        if (valores.length === 0) return;
+        resultado.push(valores.reduce((a, b) => a + b, 0) / valores.length);
+    });
+    return resultado;
+}
+
+// ==========================================================
 // EVENTOS DE TABLA (VER / EDITAR / ELIMINAR)
 // ==========================================================
 
@@ -153,43 +256,24 @@ function inicializarEventosGlobales() {
 
     document.addEventListener('click', (e) => {
 
-        // VER RESUMEN (disponible para todos)
         const botonVer = e.target.closest('.btn-ver-grupo');
         if (botonVer) {
             e.preventDefault();
             const fila = botonVer.closest('tr');
             if (!fila) return;
 
+            const idGrupo = fila.dataset.idGrupo;
             const grado = fila.querySelector('.celda-grado').innerText.trim();
-            const grupo = fila.querySelector('.celda-grupo').innerText.trim();
+            const grupoLetra = fila.querySelector('.celda-grupo').innerText.trim();
             const docente = fila.querySelector('.celda-docente').innerText.trim();
 
-            // Datos de rendimiento: pendientes de endpoint real, se muestran valores de ejemplo
-            const promedio = "8.3";
-            const aprobados = "23";
-            const reprobados = "7";
-            const porcentaje = "76.7";
-
             if (modalVerResumen) {
-                document.getElementById('verTituloGrupo').innerText = `${grado} "${grupo}"`;
-                document.getElementById('verPromedio').innerText = promedio;
-                document.getElementById('verDocente').innerText = `Prof. ${docente}`;
-                document.getElementById('verAprobados').innerText = `${aprobados} ✔`;
-                document.getElementById('verReprobados').innerText = `${reprobados} ❌`;
-                document.getElementById('verPorcentaje').innerText = porcentaje;
-
-                const anillo = document.getElementById('anilloProgreso');
-                if (anillo) {
-                    const deesfaseMaximo = 251.2;
-                    const offsetCalculado = deesfaseMaximo - (parseFloat(promedio) / 10) * deesfaseMaximo;
-                    anillo.style.strokeDashoffset = offsetCalculado;
-                }
                 modalVerResumen.classList.add('modal-activo');
+                cargarResumenGrupo(idGrupo, grado, grupoLetra, docente);
             }
             return;
         }
 
-        // EDITAR (solo Director)
         const btnEditar = e.target.closest('.btn-editar-grupo');
         if (btnEditar) {
             e.preventDefault();
@@ -201,14 +285,12 @@ function inicializarEventosGlobales() {
             document.getElementById('editGrado').value = fila.querySelector('.celda-grado').innerText.trim();
             document.getElementById('editGrupo').value = fila.querySelector('.celda-grupo').innerText.trim();
 
-            const idDocenteActual = fila.dataset.idDocente;
-            if (idDocenteActual) document.getElementById('editDocente').value = idDocenteActual;
+            llenarSelectEditar(grupoSeleccionadoId);
 
             modalEditarGrupo.classList.add('modal-activo');
             return;
         }
 
-        // ELIMINAR (solo Director)
         const btnEliminar = e.target.closest('.btn-eliminar-grupo');
         if (btnEliminar) {
             e.preventDefault();
@@ -219,7 +301,6 @@ function inicializarEventosGlobales() {
             return;
         }
 
-        // CERRAR AL CLICKEAR FUERA
         if (e.target === modalRegistrarGrupo) modalRegistrarGrupo.classList.remove('modal-activo');
         if (e.target === modalEditarGrupo) modalEditarGrupo.classList.remove('modal-activo');
         if (e.target === modalConfirmarEliminar) modalConfirmarEliminar.classList.remove('modal-activo');
@@ -237,13 +318,14 @@ function inicializarModales() {
     const modalConfirmarEliminar = document.getElementById('modalConfirmarEliminar');
     const modalVerResumen = document.getElementById('modalVerResumen');
 
-    // Abrir registrar
     const btnAbrirModal = document.getElementById('btnAbrirModal');
     if (btnAbrirModal) {
-        btnAbrirModal.addEventListener('click', () => modalRegistrarGrupo.classList.add('modal-activo'));
+        btnAbrirModal.addEventListener('click', () => {
+            llenarSelectRegistrar();
+            modalRegistrarGrupo.classList.add('modal-activo');
+        });
     }
 
-    // Cancelar registrar
     const btnCancelarModal = document.getElementById('btnCancelarModal');
     const formRegistrarGrupo = document.getElementById('formRegistrarGrupo');
     if (btnCancelarModal) {
@@ -253,7 +335,6 @@ function inicializarModales() {
         });
     }
 
-    // Guardar nuevo grupo
     if (formRegistrarGrupo) {
         formRegistrarGrupo.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -261,6 +342,11 @@ function inicializarModales() {
             const grado = parseInt(document.getElementById('grado').value);
             const grupoLetra = document.getElementById('grupo').value.trim();
             const idDocente = document.getElementById('docente').value;
+
+            if (!idDocente) {
+                mostrarToast('advertencia', 'Debes seleccionar un docente para el grupo');
+                return;
+            }
 
             try {
                 const responseGrupo = await fetch(`${API_URL}/grupos`, {
@@ -278,13 +364,16 @@ function inicializarModales() {
 
                 const grupoCreado = await responseGrupo.json();
 
-                if (idDocente) {
-                    await fetch(`${API_URL}/asignar-grupo`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({ idUsuario: parseInt(idDocente), idGrupo: grupoCreado.idGrupo })
-                    });
+                const responseAsignar = await fetch(`${API_URL}/asignar-grupo`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ idUsuario: parseInt(idDocente), idGrupo: grupoCreado.idGrupo })
+                });
+
+                if (!responseAsignar.ok) {
+                    const texto = await responseAsignar.text();
+                    mostrarToast('advertencia', 'Grupo creado, pero no se pudo asignar el docente: ' + texto);
                 }
 
                 modalRegistrarGrupo.classList.remove('modal-activo');
@@ -300,14 +389,12 @@ function inicializarModales() {
         });
     }
 
-    // Cancelar editar
     const btnCancelarEditar = document.getElementById('btnCancelarEditar');
     const formEditarGrupo = document.getElementById('formEditarGrupo');
     if (btnCancelarEditar) {
         btnCancelarEditar.addEventListener('click', () => modalEditarGrupo.classList.remove('modal-activo'));
     }
 
-    // Guardar edición
     if (formEditarGrupo) {
         formEditarGrupo.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -315,7 +402,9 @@ function inicializarModales() {
 
             const grado = parseInt(document.getElementById('editGrado').value);
             const grupoLetra = document.getElementById('editGrupo').value.trim();
-            const idDocente = document.getElementById('editDocente').value;
+            const idDocenteNuevoStr = document.getElementById('editDocente').value;
+            const idDocenteNuevo = idDocenteNuevoStr ? parseInt(idDocenteNuevoStr) : null;
+            const idDocenteActual = mapaAsignaciones[grupoSeleccionadoId] ? parseInt(mapaAsignaciones[grupoSeleccionadoId]) : null;
 
             try {
                 const responseGrupo = await fetch(`${API_URL}/grupos/${grupoSeleccionadoId}`, {
@@ -331,22 +420,27 @@ function inicializarModales() {
                     return;
                 }
 
-                if (idDocente) {
-                    const idDocenteActual = mapaAsignaciones[grupoSeleccionadoId];
+                if (idDocenteNuevo !== idDocenteActual) {
+
                     if (idDocenteActual) {
                         await fetch(`${API_URL}/asignar-grupo/${idDocenteActual}`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
-                            body: JSON.stringify({ idUsuario: parseInt(idDocente), idGrupo: parseInt(grupoSeleccionadoId) })
+                            method: 'DELETE',
+                            credentials: 'include'
                         });
-                    } else {
-                        await fetch(`${API_URL}/asignar-grupo`, {
+                    }
+
+                    if (idDocenteNuevo) {
+                        const responseAsignar = await fetch(`${API_URL}/asignar-grupo`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
-                            body: JSON.stringify({ idUsuario: parseInt(idDocente), idGrupo: parseInt(grupoSeleccionadoId) })
+                            body: JSON.stringify({ idUsuario: idDocenteNuevo, idGrupo: parseInt(grupoSeleccionadoId) })
                         });
+
+                        if (!responseAsignar.ok) {
+                            const texto = await responseAsignar.text();
+                            mostrarToast('advertencia', 'Grupo actualizado, pero no se pudo asignar el nuevo docente: ' + texto);
+                        }
                     }
                 }
 
@@ -362,7 +456,6 @@ function inicializarModales() {
         });
     }
 
-    // Eliminar
     const btnCancelarEliminar = document.getElementById('btnCancelarEliminar');
     const btnConfirmarEliminar = document.getElementById('btnConfirmarEliminar');
 
@@ -386,6 +479,7 @@ function inicializarModales() {
                 if (!response.ok) {
                     const texto = await response.text();
                     mostrarToast('advertencia', texto || 'No se pudo eliminar el grupo');
+                    modalConfirmarEliminar.classList.remove('modal-activo');
                     return;
                 }
 
@@ -393,6 +487,7 @@ function inicializarModales() {
                 mostrarToast('exito', 'Grupo eliminado correctamente');
                 grupoSeleccionadoId = null;
 
+                await cargarAsignaciones();
                 await cargarGrupos();
             } catch (error) {
                 console.error('Error eliminando grupo:', error);
@@ -401,10 +496,18 @@ function inicializarModales() {
         });
     }
 
-    // Cerrar resumen
     const btnCerrarResumen = document.getElementById('btnCerrarResumen');
     if (btnCerrarResumen) {
         btnCerrarResumen.addEventListener('click', () => modalVerResumen.classList.remove('modal-activo'));
+    }
+
+    const selectPeriodoResumen = document.getElementById('select-periodo-resumen');
+    if (selectPeriodoResumen) {
+        selectPeriodoResumen.addEventListener('change', () => {
+            if (resumenActual) {
+                cargarResumenGrupo(resumenActual.idGrupo, resumenActual.grado, resumenActual.grupoLetra, resumenActual.nombreDocente);
+            }
+        });
     }
 }
 

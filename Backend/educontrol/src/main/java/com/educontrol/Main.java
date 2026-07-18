@@ -48,7 +48,7 @@ public class Main {
         Javalin app = Javalin.create(config -> {
             config.bundledPlugins.enableCors(cors -> {
                 cors.addRule(it -> {
-                    it.allowHost("https://despliegueeduc.duckdns.org:5500" );
+                    it.allowHost("https://despliegueeduc.duckdns.orggueeduc.duckdns.org" );
                     it.allowCredentials = true;
                 });
             });
@@ -114,6 +114,6 @@ public class Main {
                 ctx.status(500).result("Error de conexión: " + e.getMessage());
             }
         });
-        System.out.println("Servidor corriendo en https://despliegueeduc.duckdns.org:7000");
+        System.out.println("Servidor corriendo en https://despliegueeduc.duckdns.orggueeduc.duckdns.org:7000");
     }
 }

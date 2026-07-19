@@ -1,11 +1,34 @@
 const API_URL = 'https://despliegueeduc.duckdns.org';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await verificarAccesoDocente();
+
     const btn = document.getElementById('btnFinPeriodo');
     if (btn) {
         btn.addEventListener('click', finalizarPeriodo);
     }
 });
+
+async function verificarAccesoDocente() {
+    try {
+        const response = await fetch(`${API_URL}/session`, { credentials: 'include' });
+        if (response.status === 401) {
+            window.location.href = '../../index.html';
+            return;
+        }
+        const sesion = await response.json();
+        if (sesion.rol !== 'Docente') {
+            mostrarModalResultado(
+                'Módulo exclusivo para Docentes',
+                'El módulo de Registro solo lo pueden usar los Docentes sobre su propio grupo. Serás redirigido.',
+                true
+            );
+            setTimeout(() => { window.location.href = '../Cuenta/Cuenta.html'; }, 2200);
+        }
+    } catch (error) {
+        console.error('Error verificando sesión:', error);
+    }
+}
 
 async function finalizarPeriodo() {
     mostrarModalConfirmacion();
@@ -75,6 +98,12 @@ async function ejecutarFinalizarPeriodo() {
             return;
         }
 
+        if (response.status === 409) {
+            const datos = await response.json();
+            await mostrarPendientes(datos);
+            return;
+        }
+
         if (!response.ok) {
             const texto = await response.text();
             mostrarModalResultado('Error', texto, true);
@@ -90,6 +119,33 @@ async function ejecutarFinalizarPeriodo() {
     } finally {
         btn.disabled = false;
     }
+}
+
+async function mostrarPendientes(datos) {
+    let contenidoHtml = `<p>${datos.mensaje}</p>`;
+
+    if (datos.pendientes && datos.pendientes.length > 0) {
+        contenidoHtml += `
+            <table style="width:100%; border-collapse: collapse; margin-top: 10px; font-size: 13px;">
+                <thead>
+                    <tr style="background:#c0392b; color:white;">
+                        <th style="padding:6px; text-align:left;">Campo Formativo</th>
+                        <th style="padding:6px; text-align:left;">Sin ningún registro de</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${datos.pendientes.map(item => `
+                        <tr style="border-bottom:1px solid #e2e8f0;">
+                            <td style="padding:6px;">${item.campoFormativo}</td>
+                            <td style="padding:6px; color:#c0392b; font-weight:600;">${item.faltantes.join(', ')}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    mostrarModalResultado('Registros incompletos', contenidoHtml, true, true);
 }
 
 function mostrarResultadoFinPeriodo(resultado) {

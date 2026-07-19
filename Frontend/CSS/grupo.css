@@ -465,7 +465,6 @@
 }
 
 /* 2. RE-ACOMODAR LAS TARJETAS EN DOS COLUMNAS PEQUEÑAS */
-/* Busca cómo se llama el contenedor de los bloques de adentro (el que tiene el promedio y las tarjetas) */
 #modalVerResumen .modal-contenido > div:nth-of-type(1),
 .modal-grid-info { 
     display: grid !important;

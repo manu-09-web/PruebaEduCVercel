@@ -43,6 +43,23 @@ public class AsignarGrupoDAO {
         return null;
     }
 
+    // Nuevo: para saber que docente (si alguno) tiene asignado un grupo especifico
+    public AsignarGrupo obtenerPorGrupo(int idGrupo) throws SQLException {
+        String sql = "SELECT * FROM asignar_grupo WHERE idGrupo = ?";
+
+        try (Connection conn = Main.conectar();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idGrupo);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return mapear(rs);
+            }
+        }
+        return null;
+    }
+
     public void crear(AsignarGrupo asignacion) throws SQLException {
         String sql = "INSERT INTO asignar_grupo (idUsuario, idGrupo) VALUES (?, ?)";
 

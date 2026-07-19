@@ -6,23 +6,17 @@
     <title>EduControl - Calificaciones Generales</title>
     <link class="styles-link" rel="stylesheet" href="../../CSS/Contenido.css">
     <link class="styles-link" rel="stylesheet" href="../../CSS/FormulariosRegistro.css">
-    
-    <style>
-        /* ==========================================================================
-           ESTILOS COMPACTOS PARA LA BARRA DE FILTROS Y BUSCADOR
-           ========================================================================== */
 
-        /* Contenedor principal ajustado para flujo continuo sin huecos vacíos */
+    <style>
         .fila-filtros-compacta {
             display: flex;
             align-items: center;
             justify-content: flex-start;
-            gap: 25px; /* Mantiene todo junto y bien proporcionado */
+            gap: 25px;
             width: 100%;
             margin-bottom: 20px;
         }
 
-        /* Bloque individual de filtro (Label + Control) */
         .item-filtro-mini {
             display: flex;
             align-items: center;
@@ -37,7 +31,6 @@
             font-size: 14px;
         }
 
-        /* Buscador integrado directamente en la fila */
         .contenedor-buscador-integrado {
             display: flex;
             align-items: center;
@@ -62,7 +55,7 @@
             width: 220px;
             padding: 6px 35px 6px 15px;
             border: 1px solid #0b2545;
-            border-radius: 20px; /* Estilo píldora idéntico al prototipo */
+            border-radius: 20px;
             font-family: 'Poppins', sans-serif;
             font-size: 14px;
             outline: none;
@@ -77,7 +70,6 @@
             pointer-events: none;
         }
 
-        /* Alineación central y estilo de texto plano para calificaciones leídas de la BD */
         .celda-calificacion-bd {
             text-align: center;
             font-family: 'Poppins', sans-serif;
@@ -96,7 +88,6 @@
 </head>
 <body class="dashboard-body">
 
-    <!-- HEADER SUPERIOR CON TUS LOGOS OFICIALES -->
     <header class="dashboard-header">
         <div class="logo-header">
             <img src="../../Img/Logos/LogoEduControl.png" alt="EduControl">
@@ -108,7 +99,6 @@
     </header>
 
     <div class="dashboard-layout">
-        <!-- SIDEBAR DE NAVEGACIÓN -->
         <aside class="dashboard-sidebar">
             <nav class="menu-lateral">
                 <a href="../Cuenta/Cuenta.html" class="item-menu"><img src="../../Img/IconosDashboard/Cuenta.svg" alt="Cuenta"> Cuenta</a>
@@ -121,28 +111,26 @@
             </nav>
         </aside>
 
-        <!-- CONTENIDO PRINCIPAL -->
         <main class="dashboard-main">
             <div class="contenedor-tarjeta-blanca">
-                
+
                 <h1 class="titulo-formulario" style="margin-bottom: 20px;">Calificaciones generales</h1>
-                
-                <!-- FILA DE FILTROS COMPACTA -->
+
                 <div class="fila-filtros-compacta">
-                    
+
                     <div class="item-filtro-mini">
                         <label>Grado:</label>
-                        <input type="text" class="input-bloqueado-bd" style="width: 50px; text-align: center; padding: 4px 0;" value="6°" readonly>
+                        <input type="text" id="input-grado" class="input-bloqueado-bd" style="width: 50px; text-align: center; padding: 4px 0;" value="" readonly>
                     </div>
 
                     <div class="item-filtro-mini">
                         <label>Grupo:</label>
-                        <input type="text" class="input-bloqueado-bd" style="width: 50px; text-align: center; padding: 4px 0;" value="A" readonly>
+                        <input type="text" id="input-grupo" class="input-bloqueado-bd" style="width: 50px; text-align: center; padding: 4px 0;" value="" readonly>
                     </div>
 
                     <div class="item-filtro-mini">
                         <label>Periodo:</label>
-                        <select class="select-pildora" style="width: auto; padding: 4px 25px 4px 12px;">
+                        <select id="select-periodo" class="select-pildora" style="width: auto; padding: 4px 25px 4px 12px;">
                             <option value="1">Primer periodo</option>
                             <option value="2">Segundo periodo</option>
                             <option value="3">Tercer periodo</option>
@@ -152,7 +140,7 @@
                     <div class="contenedor-buscador-integrado">
                         <label>Buscar alumno:</label>
                         <div class="contenedor-buscador">
-                            <input type="text" class="input-buscador-lupa" placeholder="Escriba nombre...">
+                            <input type="text" id="input-buscar-alumno" class="input-buscador-lupa" placeholder="Escriba nombre...">
                             <svg class="icono-lupa-busqueda" viewBox="0 0 24 24" fill="none" stroke="#0b2545" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -162,40 +150,15 @@
 
                 </div>
 
-                <!-- TABLA DE CALIFICACIONES DE LA BD -->
                 <div class="contenedor-tabla-scroll" style="margin-top: 20px;">
                     <table class="tabla-registro-datos">
                         <thead>
-                            <tr>
+                            <tr id="encabezados-campos">
                                 <th style="width: 32%; text-align: left; padding-left: 20px;">Alumno</th>
-                                <th style="width: 17%; text-align: center;">Lenguajes</th>
-                                <th style="width: 17%; text-align: center;">Saberes y P. Científico</th>
-                                <th style="width: 17%; text-align: center;">Ética, Nat. y Sociedades</th>
-                                <th style="width: 17%; text-align: center;">De lo Humano y lo Com.</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td class="celda-nombre-alumno">Juan Carlos López</td>
-                                <td class="celda-calificacion-bd">9.0</td>
-                                <td class="celda-calificacion-bd">8.5</td>
-                                <td class="celda-calificacion-bd">10.0</td>
-                                <td class="celda-calificacion-bd">9.5</td>
-                            </tr>
-                            <tr>
-                                <td class="celda-nombre-alumno">María Elena Gómez</td>
-                                <td class="celda-calificacion-bd">10.0</td>
-                                <td class="celda-calificacion-bd">9.0</td>
-                                <td class="celda-calificacion-bd">9.2</td>
-                                <td class="celda-calificacion-bd">8.8</td>
-                            </tr>
-                            <tr>
-                                <td class="celda-nombre-alumno">Sofía Rodríguez Miranda</td>
-                                <td class="celda-calificacion-bd">8.0</td>
-                                <td class="celda-calificacion-bd">7.5</td>
-                                <td class="celda-calificacion-bd">9.0</td>
-                                <td class="celda-calificacion-bd">10.0</td>
-                            </tr>
+                        <tbody id="tabla-cuerpo">
+                            <tr><td colspan="5">Cargando calificaciones...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -204,12 +167,11 @@
         </main>
     </div>
 
-    <!-- PIE DE PÁGINA INSTITUCIONAL -->
     <footer class="dashboard-footer">
         <img src="../../Img/Logos/LogoUp.png" alt="UP Chiapas">
         <p>Ingeniería en Tecnologías de la Información e Innovación Digital<br>Universidad Politécnica de Chiapas</p>
     </footer>
-    <script src="../../JS/preuba.js"></script>
+    <script src="../../JS/calificacionesgenerales.js"></script>
 
 </body>
 </html>

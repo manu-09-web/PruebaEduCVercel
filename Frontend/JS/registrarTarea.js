@@ -9,8 +9,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function cargarContexto() {
     try {
         const resGrupo = await fetch(`${API_URL}/mi-grupo`, { credentials: 'include' });
-        if (resGrupo.status === 401 || resGrupo.status === 403) {
+        if (resGrupo.status === 401) {
             window.location.href = '../../index.html';
+            return;
+        }
+        if (resGrupo.status === 403) {
+            mostrarError('Este modulo es exclusivo para Docentes con grupo asignado. Redirigiendo...');
+            setTimeout(() => { window.location.href = '../Cuenta/Cuenta.html'; }, 2000);
             return;
         }
         const grupo = await resGrupo.json();

@@ -5,6 +5,9 @@ import com.educontrol.dao.CampoFormativoDAO;
 import com.educontrol.dao.GrupoDAO;
 import com.educontrol.dao.PeriodoDAO;
 import com.educontrol.dao.PromedioDAO;
+import com.educontrol.dao.RegistroExamenDAO;
+import com.educontrol.dao.RegistroParticipacionDAO;
+import com.educontrol.dao.RegistroTareaDAO;
 import com.educontrol.modelos.AlumnoGrupo;
 import com.educontrol.modelos.CampoFormativo;
 import com.educontrol.modelos.Grupo;
@@ -27,6 +30,9 @@ public class CierrePeriodoController {
     private static final GrupoDAO grupoDAO = new GrupoDAO();
     private static final AlumnoGrupoDAO alumnoGrupoDAO = new AlumnoGrupoDAO();
     private static final PromedioDAO promedioDAO = new PromedioDAO();
+    private static final RegistroTareaDAO registroTareaDAO = new RegistroTareaDAO();
+    private static final RegistroExamenDAO registroExamenDAO = new RegistroExamenDAO();
+    private static final RegistroParticipacionDAO registroParticipacionDAO = new RegistroParticipacionDAO();
 
     public static void registrarRutas(Javalin app) {
 
@@ -89,11 +95,21 @@ public class CierrePeriodoController {
                     return;
                 }
 
-                // CASO C: hay un periodo abierto (1 o 2 o 3) -> cerrarlo, calcular promedios, abrir el siguiente si aplica
+                // CASO C: hay un periodo abierto (1 o 2 o 3) -> validar que esten completos los registros,
+                // cerrarlo, calcular promedios, abrir el siguiente si aplica
                 String periodoTextoActual = abiertos.get(0).getPeriodo();
                 int numeroActual = Integer.parseInt(periodoTextoActual);
 
                 List<AlumnoGrupo> alumnosDelGrupo = alumnoGrupoDAO.listarPorGrupo(idGrupo);
+
+                List<Map<String, Object>> pendientes = validarRegistrosCompletos(abiertos);
+                if (!pendientes.isEmpty()) {
+                    Map<String, Object> respuestaIncompleta = new HashMap<>();
+                    respuestaIncompleta.put("mensaje", "No se puede cerrar el periodo: hay Campos Formativos sin ningún registro de Tarea, Examen o Participación.");
+                    respuestaIncompleta.put("pendientes", pendientes);
+                    ctx.status(409).json(respuestaIncompleta);
+                    return;
+                }
 
                 List<Map<String, Object>> promediosCalculados = new ArrayList<>();
 
@@ -193,6 +209,50 @@ public class CierrePeriodoController {
         respuesta.put("mensaje", "Promedio final del ciclo escolar calculado (no se guarda, se calcula al momento de consultarlo).");
         respuesta.put("promedioAnual", resultados);
         return respuesta;
+    }
+
+    // Revisa que CADA Campo Formativo del periodo actual tenga AL MENOS UN registro de Tarea,
+    // Examen y Participacion (sin importar de que alumno). Si un campo formativo completo no
+    // tiene ningun registro de alguno de los 3 criterios, se bloquea el cierre.
+    private static List<Map<String, Object>> validarRegistrosCompletos(List<Periodo> periodosAbiertos) throws SQLException {
+        List<Map<String, Object>> pendientes = new ArrayList<>();
+
+        for (Periodo periodoDeMateria : periodosAbiertos) {
+            int idCampoFormativo = periodoDeMateria.getIdCampoFormativo();
+            int idPeriodo = periodoDeMateria.getIdPeriodo();
+
+            CampoFormativo campo = campoFormativoDAO.obtenerPorId(idCampoFormativo);
+            String nombreCampo = campo != null ? campo.getNombre() : ("Campo " + idCampoFormativo);
+
+            List<String> faltantes = new ArrayList<>();
+
+            boolean hayTarea = registroTareaDAO.listarTodos().stream()
+                .anyMatch(r -> r.getIdCampoFormativo() == idCampoFormativo && r.getIdPeriodo() == idPeriodo);
+            if (!hayTarea) {
+                faltantes.add("Tarea");
+            }
+
+            boolean hayExamen = registroExamenDAO.listarTodos().stream()
+                .anyMatch(r -> r.getIdCampoFormativo() == idCampoFormativo && r.getIdPeriodo() == idPeriodo);
+            if (!hayExamen) {
+                faltantes.add("Examen");
+            }
+
+            boolean hayParticipacion = registroParticipacionDAO.listarTodos().stream()
+                .anyMatch(r -> r.getIdCampoFormativo() == idCampoFormativo && r.getIdPeriodo() == idPeriodo);
+            if (!hayParticipacion) {
+                faltantes.add("Participacion");
+            }
+
+            if (!faltantes.isEmpty()) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("campoFormativo", nombreCampo);
+                item.put("faltantes", faltantes);
+                pendientes.add(item);
+            }
+        }
+
+        return pendientes;
     }
 
     private static Map<String, Object> mensaje(String texto) {

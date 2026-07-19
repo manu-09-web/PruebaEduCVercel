@@ -1,0 +1,15 @@
+const API_URL = 'http://localhost:7000';
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const response = await fetch(`${API_URL}/session`, { credentials: 'include' });
+        if (response.status === 401) {
+            window.location.href = '../../index.html';
+            return;
+        }
+        // Tanto Docente como Director pueden usar este módulo (el Director elige el grupo
+        // que quiere consultar dentro de cada pantalla).
+    } catch (error) {
+        console.error('Error verificando sesión:', error);
+    }
+});

@@ -234,6 +234,26 @@ public class PeriodoDAO {
         return null;
     }
 
+    // Todas las filas de un grupo+periodo, sin importar si estan Abiertas o Cerradas
+    // (a diferencia de listarAbiertosPorGrupo, esta sirve para consultar periodos YA cerrados)
+    public List<Periodo> listarPorGrupoYPeriodo(int idGrupo, String periodoTexto) throws SQLException {
+        List<Periodo> lista = new ArrayList<>();
+        String sql = "SELECT * FROM periodo WHERE idGrupo = ? AND periodo = ?";
+
+        try (Connection conn = Main.conectar();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idGrupo);
+            stmt.setString(2, periodoTexto);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                lista.add(mapear(rs));
+            }
+        }
+        return lista;
+    }
+
     private Periodo mapear(ResultSet rs) throws SQLException {
         Timestamp tsFechaCierre = rs.getTimestamp("fechaCierre");
 

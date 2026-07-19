@@ -48,22 +48,22 @@
                 <a href="../Cuenta/Cuenta.html" class="item-menu"><img src="../../Img/IconosDashboard/Cuenta.svg" alt="Cuenta"> Cuenta</a>
                 <a href="../Alumnos/Alumnos.html" class="item-menu"><img src="../../Img/IconosDashboard/Alumno.svg" alt="Alumno"> Alumno</a>
                 <a href="../Evaluacion/Evaluacion.html" class="item-menu"><img src="../../Img/IconosDashboard/Evaluacion.svg" alt="Evaluación"> Evaluación</a>
-                
+
                 <a href="../Registro/principal.html" class="item-menu"><img src="../../Img/IconosDashboard/Registro.svg" alt="Registro"> Registro</a>
-                
+
                 <a href="../Calificaciones/menucali.html" class="item-menu"><img src="../../Img/IconosDashboard/Calificacion.svg" alt="Calificación"> Calificación</a>
-                
+
                 <a href="../Grupos/listagrupos.html" class="item-menu item-activo"><img src="../../Img/IconosDashboard/Gruposvg.svg" alt="Grupo"> Grupo</a>
-                
+
                 <a href="../Reportes/menurepo.html" class="item-menu"><img src="../../Img/IconosDashboard/Reportes.svg" alt="Reportes"> Reportes</a>
             </nav>
         </aside>
 
         <main class="dashboard-main">
             <div class="contenedor-tarjeta-blanca" style="padding-bottom: 30px;">
-                
+
                 <h1 class="titulo-formulario" style="margin-bottom: 20px;">Lista de grupos</h1>
-                
+
                 <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
                     <button id="btnAbrirModal" class="btn-guardar" style="background-color: #2ecc71; display: flex; align-items: center; gap: 8px; border: none; padding: 10px 20px; color: white; border-radius: 6px; cursor: pointer; font-weight: bold;">
                         <span style="font-size: 18px;">+</span> Nuevo grupo
@@ -81,27 +81,8 @@
                             </tr>
                         </thead>
                         <tbody id="cuerpo-grupos">
-                        <tr data-ciclo="2025 - 2026">
-                            <td class="celda-centro celda-grado">1</td>
-                            <td class="celda-centro celda-grupo">A</td>
-                            <td class="celda-docente">Docente 1</td>
-                            <td class="celda-centro">
-                                <button class="btn-accion-icono btn-ver-grupo" title="Ver resumen"><img src="../../Img/IconosAlumnos/ver.svg" alt="Ver"></button>
-                                <button class="btn-accion-icono btn-editar-grupo" title="Editar"><img src="../../Img/IconosAlumnos/editar.svg" alt="Editar"></button>
-                                <button class="btn-accion-icono btn-eliminar-grupo" title="Eliminar"><img src="../../Img/IconosAlumnos/eliminar.svg" alt="Eliminar"></button>
-                            </td>
-                        </tr>
-                        <tr data-ciclo="2025 - 2026">
-                            <td class="celda-centro celda-grado">1</td>
-                            <td class="celda-centro celda-grupo">B</td>
-                            <td class="celda-docente">Docente 2</td>
-                            <td class="celda-centro">
-                                <button class="btn-accion-icono btn-ver-grupo" title="Ver resumen"><img src="../../Img/IconosAlumnos/ver.svg" alt="Ver"></button>
-                                <button class="btn-accion-icono btn-editar-grupo" title="Editar"><img src="../../Img/IconosAlumnos/editar.svg" alt="Editar"></button>
-                                <button class="btn-accion-icono btn-eliminar-grupo" title="Eliminar"><img src="../../Img/IconosAlumnos/eliminar.svg" alt="Eliminar"></button>
-                            </td>
-                        </tr>
-                    </tbody>
+                            <tr><td colspan="4">Cargando grupos...</td></tr>
+                        </tbody>
                     </table>
                 </div>
 
@@ -134,9 +115,6 @@
                         <label for="docente">Docente:</label>
                         <select id="docente" name="docente" required>
                             <option value="" disabled selected>Seleccione un docente...</option>
-                            <option value="Docente 1">Docente 1</option>
-                            <option value="Docente 2">Docente 2</option>
-                            <option value="Docente 3">Docente 3</option>
                         </select>
                     </div>
                     <div class="modal-grupo-input">
@@ -178,10 +156,8 @@
                     </div>
                     <div class="modal-grupo-input">
                         <label for="editDocente">Docente:</label>
-                        <select id="editDocente" name="docente" required>
-                            <option value="Docente 1">Docente 1</option>
-                            <option value="Docente 2">Docente 2</option>
-                            <option value="Docente 3">Docente 3</option>
+                        <select id="editDocente" name="docente">
+                            <option value="">Sin asignar</option>
                         </select>
                     </div>
                     <div class="modal-grupo-input">
@@ -217,24 +193,33 @@
 
     <div id="modalVerResumen" class="modal-overlay">
         <div class="modal-contenido">
-            
+
             <h2 id="verTituloGrupo" class="modal-titulo-grupo">1 "A"</h2>
-            
+
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:15px;">
+                <label for="select-periodo-resumen" style="font-family:'Poppins',sans-serif; font-weight:600; color:#0b2545; font-size:14px; margin:0;">Periodo:</label>
+                <select id="select-periodo-resumen" class="select-pildora" style="width:auto; padding:4px 25px 4px 12px;">
+                    <option value="1">Primer periodo</option>
+                    <option value="2">Segundo periodo</option>
+                    <option value="3">Tercer periodo</option>
+                </select>
+            </div>
+
             <div class="modal-grid-info">
-                
+
                 <div class="tarjeta-modal-blanca centro-txt">
                     <span class="modal-subtitulo-seccion">Promedio grupal</span>
-                    
+
                     <div class="contenedor-grafico-circular">
-                        <span id="verPromedio">8.3</span>
-                        
+                        <span id="verPromedio">...</span>
+
                         <svg width="120" height="120" viewBox="0 0 100 100" class="svg-anillo">
                             <circle cx="50" cy="50" r="40" stroke="#e0e0e0" stroke-width="8" fill="none" />
-                            <circle id="anilloProgreso" cx="50" cy="50" r="40" stroke="#1b2a4a" stroke-width="8" fill="none" 
+                            <circle id="anilloProgreso" cx="50" cy="50" r="40" stroke="#1b2a4a" stroke-width="8" fill="none"
                                     stroke-dasharray="251.2" stroke-dashoffset="251.2" style="transition: stroke-dashoffset 0.5s ease-in-out;" />
                         </svg>
                     </div>
-                    
+
                     <p class="modal-docente-bloque">
                         Docente a cargo:<br>
                         <span id="verDocente" class="txt-principal-modal">Prof. Docente 1</span>
@@ -242,16 +227,16 @@
                 </div>
 
                 <div class="modal-columna-datos">
-                    
+
                     <div class="bloque-datos-modal">
                         <div class="modal-titulo-bloque">Resumen del grupo <span style="font-size: 18px;">👥</span></div>
                         <div class="fila-dato-modal">
                             <span>Total de alumnos:</span>
-                            <span class="color-oscuro" style="font-weight: bold;">30</span>
+                            <span id="verTotalAlumnos" class="color-oscuro" style="font-weight: bold;">...</span>
                         </div>
                         <div class="fila-dato-modal">
                             <span>Aprobados:</span>
-                            <span id="verAprobados" class="color-check" style="font-weight: bold;">23 ✔</span>
+                            <span id="verAprobados" class="color-check" style="font-weight: bold;">...</span>
                         </div>
                     </div>
 
@@ -259,14 +244,14 @@
                         <div class="modal-titulo-bloque">Rendimiento del periodo</div>
                         <div class="fila-dato-modal">
                             <span>Reprobados:</span>
-                            <span id="verReprobados" class="color-cross" style="font-weight: bold;">7 ❌</span>
+                            <span id="verReprobados" class="color-cross" style="font-weight: bold;">...</span>
                         </div>
                         <div class="fila-dato-modal">
                             <span>% de aprobación:</span>
-                            <span class="color-oscuro" style="font-weight: bold;"><span id="verPorcentaje">76.7</span>%</span>
+                            <span class="color-oscuro" style="font-weight: bold;"><span id="verPorcentaje">...</span>%</span>
                         </div>
                     </div>
-                    
+
                 </div>
             </div>
 

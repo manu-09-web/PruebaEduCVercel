@@ -214,6 +214,9 @@ async function inicializarVerAlumno() {
     if (!matricula) return;
 
     try {
+        const sesion = await obtenerSesion();
+        if (!sesion) return;
+
         const response = await fetch(`${API_URL}/alumnos/${matricula}`, { credentials: 'include' });
 
         if (response.status === 401) {
@@ -235,15 +238,65 @@ async function inicializarVerAlumno() {
         document.getElementById('info-nombre').innerText =
             `${alumno.nombre || ''} ${alumno.apellidoPaterno || ''} ${alumno.apellidoMaterno || ''}`.trim();
 
+        const infoMatricula = document.getElementById('info-matricula');
+        if (infoMatricula) infoMatricula.innerText = alumno.matricula ?? matricula;
+
         document.getElementById('info-grupo').innerText = obtenerNombreGrupo(alumno.idGrupo);
         document.getElementById('info-lista').innerText = alumno.numeroLista ?? "---";
 
-        document.getElementById('info-promedio').innerText = alumno.promedioFinal || "---";
+        // Campos opcionales (pueden no existir en el HTML si ya se movieron a otros módulos)
+        const camposOpcionales = {
+            'info-tareas': alumno.tareas,
+            'info-disciplina': alumno.disciplina,
+            'info-asistencia': alumno.asistencia,
+            'info-examen': alumno.examen,
+            'info-participacion': alumno.participacion
+        };
+        Object.entries(camposOpcionales).forEach(([id, valor]) => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = valor || "---";
+        });
+
+        // Promedio final REAL: promedio anual (3 periodos x 4 campos formativos) de este alumno
+        const promedioAnual = await calcularPromedioAnualAlumno(sesion, alumno.idGrupo, alumno.matricula ?? matricula);
+        const infoPromedio = document.getElementById('info-promedio');
+        if (infoPromedio) infoPromedio.innerText = promedioAnual !== null ? promedioAnual.toFixed(2) : "---";
 
     } catch (error) {
         console.error("Error al cargar datos:", error);
         document.getElementById('info-nombre').innerText = "Error al cargar la información";
     }
+}
+
+// Junta el promedioFinal de este alumno en los 3 periodos x hasta 4 Campos Formativos,
+// y saca UN SOLO promedio general. Solo se calcula si LOS 3 PERIODOS ya tienen al menos
+// un valor -- si falta cualquiera de los 3, todavia no es un promedio "final" real.
+async function calcularPromedioAnualAlumno(sesion, idGrupo, matricula) {
+    const valoresPorPeriodo = { '1': [], '2': [], '3': [] };
+
+    for (const periodo of ['1', '2', '3']) {
+        try {
+            const endpoint = sesion.rol === 'Director'
+                ? `${API_URL}/promedio/grupo?idGrupo=${idGrupo}&periodo=${periodo}`
+                : `${API_URL}/promedio/mi-grupo?periodo=${periodo}`;
+
+            const response = await fetch(endpoint, { credentials: 'include' });
+            if (!response.ok) continue;
+
+            const datos = await response.json();
+            datos
+                .filter(item => item.matricula == matricula && item.promedioFinal !== null && item.promedioFinal !== undefined)
+                .forEach(item => valoresPorPeriodo[periodo].push(item.promedioFinal));
+        } catch (error) {
+            console.error(`Error obteniendo promedios del periodo ${periodo}:`, error);
+        }
+    }
+
+    const periodosCompletos = Object.values(valoresPorPeriodo).every(lista => lista.length > 0);
+    if (!periodosCompletos) return null;
+
+    const todosLosValores = Object.values(valoresPorPeriodo).flat();
+    return todosLosValores.reduce((a, b) => a + b, 0) / todosLosValores.length;
 }
 
 // ==========================================================
@@ -286,7 +339,19 @@ async function inicializarEditarAlumno() {
         if (selectGrupo) llenarSelectGrupos(selectGrupo, alumno.idGrupo);
         document.getElementById('edit-lista').value = alumno.numeroLista || '';
 
-        document.getElementById('edit-promedio').value = alumno.promedioFinal || '';
+        // Campos opcionales (pueden no existir en el HTML si ya se movieron a otros módulos)
+        const camposOpcionales = {
+            'edit-tareas': alumno.tareas,
+            'edit-disciplina': alumno.disciplina,
+            'edit-asistencia': alumno.asistencia,
+            'edit-examen': alumno.examen,
+            'edit-participacion': alumno.participacion,
+            'edit-promedio': alumno.promedioFinal
+        };
+        Object.entries(camposOpcionales).forEach(([id, valor]) => {
+            const el = document.getElementById(id);
+            if (el) el.value = valor || '';
+        });
 
     } catch (error) {
         console.error("Error al cargar los datos:", error);
@@ -302,9 +367,22 @@ async function inicializarEditarAlumno() {
             nombre: document.getElementById('edit-nombre').value,
             apellidoPaterno: document.getElementById('edit-apellido-paterno').value,
             apellidoMaterno: document.getElementById('edit-apellido-materno').value,
-            numeroLista: parseInt(document.getElementById('edit-lista').value),
-            promedioFinal: parseFloat(document.getElementById('edit-promedio').value)
+            numeroLista: parseInt(document.getElementById('edit-lista').value)
         };
+
+        const valorSiExiste = (id) => {
+            const el = document.getElementById(id);
+            return el ? el.value : undefined;
+        };
+
+        if (valorSiExiste('edit-tareas') !== undefined) datosActualizados.tareas = valorSiExiste('edit-tareas');
+        if (valorSiExiste('edit-disciplina') !== undefined) datosActualizados.disciplina = valorSiExiste('edit-disciplina');
+        if (valorSiExiste('edit-asistencia') !== undefined) datosActualizados.asistencia = valorSiExiste('edit-asistencia');
+        if (valorSiExiste('edit-examen') !== undefined) datosActualizados.examen = valorSiExiste('edit-examen');
+        if (valorSiExiste('edit-participacion') !== undefined) datosActualizados.participacion = valorSiExiste('edit-participacion');
+        if (document.getElementById('edit-promedio')) {
+            datosActualizados.promedioFinal = parseFloat(document.getElementById('edit-promedio').value);
+        }
 
         // Solo el Director puede mandar idGrupo (el select para Docente está deshabilitado,
         // pero por seguridad tampoco lo agregamos al body si es Docente)

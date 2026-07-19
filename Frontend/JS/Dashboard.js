@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:7000';
+const API_URL = 'https://despliegueeduc.duckdns.org';
 const UMBRAL_APROBATORIO = 6;
 
 let chartRendimientoCampos = null;

@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:7000';
+const API_URL = 'https://despliegueeduc.duckdns.org';
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {

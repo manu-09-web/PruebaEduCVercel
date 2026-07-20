@@ -49,7 +49,9 @@ public class Main {
         Javalin app = Javalin.create(config -> {
             config.bundledPlugins.enableCors(cors -> {
                 cors.addRule(it -> {
-                    it.allowHost("https://despliegueeduc.duckdns.org" );
+                    it.allowHost("https://edu-control-pru.vercel.app",
+                                "http://127.0.0.1:5500",
+                                "http://localhost:5500" );
                     it.allowCredentials = true;
                 });
             });
